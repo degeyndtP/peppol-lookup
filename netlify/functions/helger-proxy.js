@@ -1,7 +1,7 @@
-// Netlify Function: helger-proxy
+// Netlify Function: helger-proxy (CommonJS)
 // Proxies requests to Helger Peppol API to avoid browser CORS issues
 
-export async function handler(event) {
+exports.handler = async function (event) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -49,4 +49,4 @@ export async function handler(event) {
       body: JSON.stringify({ error: 'Upstream request failed', details: String(err) }),
     };
   }
-}
+};
