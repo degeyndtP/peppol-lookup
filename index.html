@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peppol lookup</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 Peppol lookup</h1>
+            <p>Look up Belgian companies on the Peppol network using their VAT or entrepreneur number</p>
+        </header>
+
+        <main>
+            <div class="search-section">
+                <div class="input-group">
+                    <label for="companyNumber">Belgian VAT or Entrepreneur Number:</label>
+                    <input 
+                        type="text" 
+                        id="companyNumber" 
+                        placeholder="e.g., BE0123456789 or 0123456789"
+                        maxlength="20"
+                    >
+                    <button id="lookupBtn" onclick="performLookup()">
+                        <span id="btnText">🔍 Lookup</span>
+                        <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
+                    </button>
+                </div>
+                
+                <div class="help-text">
+                    <p><strong>Supported formats:</strong></p>
+                    <ul>
+                        <li>Belgian VAT: BE0123456789 or 0123456789</li>
+                        <li>Belgian Entrepreneur Number: 0123456789</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="results" class="results-section" style="display: none;">
+                <h2>Company Information</h2>
+                <div id="companyInfo" class="info-card">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+
+            <div id="error" class="error-section" style="display: none;">
+                <div class="error-card">
+                    <h3>⚠️ Error</h3>
+                    <p id="errorMessage"></p>
+                </div>
+            </div>
+
+            <div id="loading" class="loading-section" style="display: none;">
+                <div class="loading-card">
+                    <div class="loading-spinner"></div>
+                    <p>Searching Peppol network...</p>
+                </div>
+            </div>
+        </main>
+
+        
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

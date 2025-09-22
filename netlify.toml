@@ -1,0 +1,19 @@
+[build]
+  publish = "."
+  command = ""
+
+[functions]
+  directory = "netlify/functions"
+
+[build.processing]
+  skip_processing = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+
+[dev]
+  port = 8888
+  publish = "."
