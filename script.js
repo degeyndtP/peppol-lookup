@@ -96,10 +96,8 @@ async function fetchPeppolData(endpoint) {
 function extractCompanyInfo(businessCardData, smpData, existenceData) {
     const info = {
         companyName: 'Not available',
-        serviceEndpoints: [],
         technicalContact: 'Not available',
         country: 'Not available',
-        location: 'Not available',
         additionalInfo: 'Not available',
         smpHostUri: 'Not available',
         participantExists: false
@@ -120,7 +118,6 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         }
         
         info.country = entity.countrycode || 'Not available';
-        info.location = entity.geoinfo || 'Not available';
         info.additionalInfo = entity.additionalinfo || 'Not available';
         
         // Technical contact might be in additional info or contact details
@@ -130,37 +127,12 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         }
     }
     
-    // Extract service endpoints from SMP data
-    if (smpData && smpData.urls && smpData.urls.length > 0) {
-        info.serviceEndpoints = smpData.urls.map(url => ({
-            href: url.href || 'Not available',
-            documentType: url.niceName || url.documentTypeID || 'Unknown document type',
-            deprecated: url.isDeprecated || false
-        }));
-    }
-    
     return info;
 }
 
 // Display company information
 function displayCompanyInfo(info) {
     const companyInfoDiv = document.getElementById('companyInfo');
-    
-    let endpointsHtml = '';
-    if (info.serviceEndpoints.length > 0) {
-        endpointsHtml = `
-            <div class="endpoint-list">
-                ${info.serviceEndpoints.map(endpoint => `
-                    <div class="endpoint-item">
-                        <div class="endpoint-url">${endpoint.href}</div>
-                        <div class="endpoint-type">${endpoint.documentType}${endpoint.deprecated ? ' (Deprecated)' : ''}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else {
-        endpointsHtml = '<span class="info-value">No service endpoints found</span>';
-    }
     
     companyInfoDiv.innerHTML = `
         <div class="info-item">
@@ -174,11 +146,6 @@ function displayCompanyInfo(info) {
         </div>
         
         <div class="info-item">
-            <span class="info-label">📍 Location:</span>
-            <span class="info-value">${info.location}</span>
-        </div>
-        
-        <div class="info-item">
             <span class="info-label">ℹ️ Additional Information:</span>
             <span class="info-value">${info.additionalInfo}</span>
         </div>
@@ -186,11 +153,6 @@ function displayCompanyInfo(info) {
         <div class="info-item">
             <span class="info-label">🔗 SMP Host URI:</span>
             <span class="info-value url">${info.smpHostUri}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">⚙️ Service Endpoints:</span>
-            ${endpointsHtml}
         </div>
         
         <div class="info-item">
@@ -247,9 +209,36 @@ async function performLookup() {
             showError('Unable to retrieve company information. The company may not be registered in the Peppol network or the service is temporarily unavailable.');
             return;
         }
-        
-        // Extract and display company information
+        // Extract base company information
         const companyInfo = extractCompanyInfo(businessCard, smp, existence);
+
+        // If technical contact not found yet, try to get it from a detailed SMP endpoint lookup
+        try {
+            if ((!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available') && smp && smp.urls && smp.urls.length > 0) {
+                // Prefer the UBL Invoice doc type if present, otherwise use the first
+                let preferred = smp.urls.find(u => (u.documentTypeID || '').includes('Invoice-2')) || smp.urls[0];
+                const docTypeID = preferred.documentTypeID;
+                if (docTypeID) {
+                    const detailed = await fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}/${encodeURIComponent(docTypeID)}`);
+                    const processes = detailed && detailed.serviceinfo && detailed.serviceinfo.processes || [];
+                    for (const proc of processes) {
+                        const endpoints = proc.endpoints || [];
+                        for (const ep of endpoints) {
+                            if (ep.technicalContactUrl) {
+                                companyInfo.technicalContact = ep.technicalContactUrl;
+                                break;
+                            }
+                        }
+                        if (companyInfo.technicalContact && companyInfo.technicalContact !== 'Not available') break;
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignore errors in technical contact enrichment, continue showing base info
+            console.warn('Technical contact enrichment failed:', e);
+        }
+
+        // Display company information
         displayCompanyInfo(companyInfo);
         
     } catch (error) {
