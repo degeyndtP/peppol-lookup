@@ -5,9 +5,9 @@
 }
 
 :root {
-    --tl-primary: #00a28a;
-    --tl-primary-600: #00937d;
-    --tl-primary-700: #007e6b;
+    --tl-primary: #00B2B2;
+    --tl-primary-600: #00A3A3;
+    --tl-primary-700: #008F8F;
     --tl-bg: #f6f8f9;
     --tl-surface: #ffffff;
     --tl-border: #e6eaee;
@@ -48,6 +48,12 @@ header h1 {
     font-size: 2.25rem;
     margin-bottom: 12px;
     font-weight: 700;
+}
+
+.brand-logo {
+    height: 28px;
+    vertical-align: middle;
+    margin-right: 8px;
 }
 
 header p {
@@ -92,7 +98,7 @@ main {
 .input-group input:focus {
     outline: none;
     border-color: var(--tl-primary);
-    box-shadow: 0 0 0 3px rgba(0,162,138,0.15);
+    box-shadow: 0 0 0 3px rgba(0, 178, 178, 0.18);
 }
 
 .input-group button {
@@ -113,7 +119,7 @@ main {
 .input-group button:hover {
     background: var(--tl-primary-600);
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(0,162,138,0.18);
+    box-shadow: 0 6px 14px rgba(0, 178, 178, 0.18);
 }
 
 .input-group button:active {

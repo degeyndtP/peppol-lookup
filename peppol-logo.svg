@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Simple placeholder Peppol-style logo. Replace with official asset if available. -->
+<svg width="140" height="36" viewBox="0 0 140 36" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peppol">
+  <rect x="0" y="0" width="140" height="36" rx="8" fill="#00B2B2"/>
+  <g fill="#ffffff">
+    <circle cx="18" cy="18" r="6" fill="#ffffff" opacity="0.15"/>
+    <circle cx="28" cy="18" r="10" fill="#ffffff" opacity="0.15"/>
+    <text x="44" y="24" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="18" fill="#ffffff">Peppol</text>
+  </g>
+</svg>
