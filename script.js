@@ -41,6 +41,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'https://codabox.com') return 'Doccle or Clearfacts';
     if (v === 'support@babelway.com') return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
+    if (v === 'support@e-invoice.be') return 'e-invoice.be';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
     return 'Unknown';
@@ -298,6 +299,10 @@ async function performLookup() {
                                 if (t === 'peppol@teamleader.eu') {
                                     companyInfo.accessPointName = 'Teamleader';
                                     companyInfo.softwareProviders = 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
+                                }
+                                if (t === 'support@e-invoice.be') {
+                                    companyInfo.accessPointName = 'e-invoice';
+                                    companyInfo.softwareProviders = 'e-invoice.be';
                                 }
                             }
                             // If technical contact is Codabox URL, set AP to Codabox
