@@ -15,13 +15,15 @@
             <h1>Peppol lookup</h1>
             <div class="powered-by">
                 <span>powered by</span>
-                <a href="https://www.teamleader.eu/" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.teamleader.eu/" target="_blank" rel="noopener noreferrer" class="brand-link">
                     <img 
+                        id="tlLogo"
                         src="https://www.teamleader.eu/themes/custom/teamleader/images/teamleader-logo.svg"
                         alt="Teamleader"
                         class="brand-logo"
-                        onerror="this.onerror=null;this.src='https://assets-global.website-files.com/5fbb6f55e985340b1b033b25/61bb49f8b0c0acd35fecbfd2_Teamleader-logo.png';"
+                        onerror="this.onerror=null;this.src='https://assets-global.website-files.com/5fbb6f55e985340b1b033b25/61bb49f8b0c0acd35fecbfd2_Teamleader-logo.png'; this.onload=null; setTimeout(function(){ var img=document.getElementById('tlLogo'); if(img && (img.naturalWidth===0 || img.offsetHeight===0)){ img.style.display='none'; var t=document.getElementById('tlLogoText'); if(t) t.style.display='inline-block'; }},0);"
                     >
+                    <span id="tlLogoText" class="brand-text" style="display:none;">Teamleader</span>
                 </a>
             </div>
             <p>Look up Belgian companies on the Peppol network using their VAT or entrepreneur number</p>
