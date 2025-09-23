@@ -12,9 +12,19 @@
 <body>
     <div class="container">
         <header>
-            <h1>Peppol lookup</h1>
+            <div class="header-row" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <h1 data-i18n="title">Peppol lookup</h1>
+                <div class="lang-switcher" aria-label="Language selector">
+                    <label for="langSwitcher" class="sr-only">Language</label>
+                    <select id="langSwitcher" title="Language" aria-label="Language">
+                        <option value="en">English</option>
+                        <option value="nl">Nederlands</option>
+                        <option value="fr">Français</option>
+                    </select>
+                </div>
+            </div>
             <div class="powered-by">
-                <span>powered by</span>
+                <span data-i18n="powered_by">powered by</span>
                 <a href="https://www.teamleader.eu/" target="_blank" rel="noopener noreferrer" class="brand-link" aria-label="Teamleader">
                     <img id="tlImgLocal" src="teamleader-logo.png" alt="Teamleader" class="brand-logo" style="display:none;" onload="this.style.display='inline-block'; var svg=document.getElementById('tlInlineSvg'); if(svg) svg.style.display='none';" onerror="this.style.display='none'; var svg=document.getElementById('tlInlineSvg'); if(svg) svg.style.display='inline-block';" />
                     <svg id="tlInlineSvg" class="brand-svg" width="140" height="28" viewBox="0 0 140 28" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Teamleader logo" style="display:inline-block;">
@@ -25,36 +35,37 @@
                     </svg>
                 </a>
             </div>
-            <p>Look up Belgian companies on the Peppol network using their VAT or entrepreneur number</p>
+            <p data-i18n="tagline">Look up Belgian companies on the Peppol network using their VAT or entrepreneur number</p>
         </header>
 
         <main>
             <div class="search-section">
                 <div class="input-group">
-                    <label for="companyNumber">Belgian VAT or Entrepreneur Number:</label>
+                    <label for="companyNumber" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</label>
                     <input 
                         type="text" 
                         id="companyNumber" 
+                        data-i18n-placeholder="input_placeholder"
                         placeholder="e.g., BE0123456789 or 0123456789"
                         maxlength="20"
                     >
                     <button id="lookupBtn" onclick="performLookup()">
-                        <span id="btnText">Lookup</span>
+                        <span id="btnText" data-i18n="lookup_button">Lookup</span>
                         <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
                     </button>
                 </div>
                 
                 <div class="help-text">
-                    <p><strong>Supported formats:</strong></p>
+                    <p><strong data-i18n="supported_formats_title">Supported formats:</strong></p>
                     <ul>
-                        <li>Belgian VAT: BE0123456789</li>
-                        <li>Belgian Entrepreneur Number: 0123456789</li>
+                        <li data-i18n="supported_format_vat">Belgian VAT: BE0123456789</li>
+                        <li data-i18n="supported_format_ent">Belgian Entrepreneur Number: 0123456789</li>
                     </ul>
                 </div>
             </div>
 
             <div id="results" class="results-section" style="display: none;">
-                <h2>Company Information</h2>
+                <h2 data-i18n="results_header">Company Information</h2>
                 <div id="companyInfo" class="info-card">
                     <!-- Results will be populated here -->
                 </div>
@@ -62,7 +73,7 @@
 
             <div id="error" class="error-section" style="display: none;">
                 <div class="error-card">
-                    <h3>⚠️ Error</h3>
+                    <h3 data-i18n="error_title">⚠️ Error</h3>
                     <p id="errorMessage"></p>
                 </div>
             </div>
@@ -70,20 +81,21 @@
             <div id="loading" class="loading-section" style="display: none;">
                 <div class="loading-card">
                     <div class="loading-spinner"></div>
-                    <p>Searching Peppol network...</p>
+                    <p data-i18n="loading_text">Searching Peppol network...</p>
                 </div>
             </div>
         </main>
 
         <footer>
             <p>
-                Powered by 
+                <span data-i18n-footer-pre>Powered by</span>
                 <a href="https://www.teamleader.eu/" target="_blank" rel="noopener noreferrer">Teamleader</a>, 
-                your all-in-1 business software with Peppol
+                <span data-i18n-footer-post>your all-in-1 business software with Peppol</span>
             </p>
         </footer>
     </div>
 
+    <script src="i18n/i18n.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

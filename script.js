@@ -4,9 +4,12 @@ const NETLIFY_PROXY = '/.netlify/functions/helger-proxy?endpoint='; // works on 
 // Always use production SML
 const SML_ID = 'digitprod';
 
+// Cache last company info for i18n re-rendering
+let LAST_COMPANY_INFO = null;
+
 // Derive a human-readable Access Point name from an SMP Host URI
 function getAccessPointNameFromSmpUri(smpHostUri) {
-    if (!smpHostUri || typeof smpHostUri !== 'string') return 'Not available';
+    if (!smpHostUri || typeof smpHostUri !== 'string') return I18n?.t('not_available') || 'Not available';
     try {
         const url = new URL(smpHostUri);
         const host = url.hostname;
@@ -29,7 +32,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
 
 // Map software providers based on the technical contact email (extend as needed)
 function mapSoftwareProviders(technicalContact, accessPointName) {
-    if (!technicalContact && !accessPointName) return 'Unknown';
+    if (!technicalContact && !accessPointName) return I18n?.t('unknown') || 'Unknown';
     const v = (technicalContact || '').toString().toLowerCase();
     const ap = (accessPointName || '').toString();
     // Direct email/URL mappings
@@ -46,7 +49,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'peppol.support@odoo.com') return 'Odoo';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
-    return 'Unknown';
+    return I18n?.t('unknown') || 'Unknown';
 }
 
 // Belgian VAT number validation and formatting
@@ -116,11 +119,12 @@ async function fetchPeppolData(endpoint) {
         
         if (!response.ok) {
             if (response.status === 404) {
-                throw new Error('Company not found in Peppol network');
+                throw new Error(I18n?.t('error_company_not_found') || 'Company not found in Peppol network');
             } else if (response.status >= 500) {
-                throw new Error('Peppol service temporarily unavailable');
+                throw new Error(I18n?.t('error_service_unavailable') || 'Peppol service temporarily unavailable');
             } else {
-                throw new Error(`API error: ${response.status}`);
+                const msg = (I18n?.t('error_api_error', { status: response.status }) || `API error: ${response.status}`);
+                throw new Error(msg);
             }
         }
         
@@ -129,9 +133,9 @@ async function fetchPeppolData(endpoint) {
     } catch (error) {
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             if (location && location.protocol === 'file:') {
-                throw new Error('Network request was blocked by the browser when opened from a local file. Please run this page via a local web server or deploy it to a web host.');
+                throw new Error(I18n?.t('error_network_local_file') || 'Network request was blocked by the browser when opened from a local file. Please run this page via a local web server or deploy it to a web host.');
             }
-            throw new Error('Network error. Please check your internet connection.');
+            throw new Error(I18n?.t('error_network_generic') || 'Network error. Please check your internet connection.');
         }
         throw error;
     }
@@ -140,21 +144,21 @@ async function fetchPeppolData(endpoint) {
 // Extract company information from API responses
 function extractCompanyInfo(businessCardData, smpData, existenceData) {
     const info = {
-        companyName: 'Not available',
-        technicalContact: 'Not available',
-        country: 'Not available',
-        additionalInfo: 'Not available',
-        smpHostUri: 'Not available',
+        companyName: I18n?.t('not_available') || 'Not available',
+        technicalContact: I18n?.t('not_available') || 'Not available',
+        country: I18n?.t('not_available') || 'Not available',
+        additionalInfo: I18n?.t('not_available') || 'Not available',
+        smpHostUri: I18n?.t('not_available') || 'Not available',
         participantExists: false,
-        accessPointName: 'Not available',
-        serviceEndpoint: 'Not available'
+        accessPointName: I18n?.t('not_available') || 'Not available',
+        serviceEndpoint: I18n?.t('not_available') || 'Not available'
     };
     
     // Extract existence info
     if (existenceData) {
         info.participantExists = existenceData.exists || false;
-        info.smpHostUri = existenceData.smpHostURI || 'Not available';
-        if (info.smpHostUri && info.smpHostUri !== 'Not available') {
+        info.smpHostUri = existenceData.smpHostURI || (I18n?.t('not_available') || 'Not available');
+        if (info.smpHostUri && info.smpHostUri !== (I18n?.t('not_available') || 'Not available')) {
             info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
         }
     }
@@ -164,16 +168,16 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         const entity = businessCardData.entity[0];
         
         if (entity.name && entity.name.length > 0) {
-            info.companyName = entity.name[0].name || 'Not available';
+            info.companyName = entity.name[0].name || (I18n?.t('not_available') || 'Not available');
         }
         
-        info.country = entity.countrycode || 'Not available';
-        info.additionalInfo = entity.additionalinfo || 'Not available';
+        info.country = entity.countrycode || (I18n?.t('not_available') || 'Not available');
+        info.additionalInfo = entity.additionalinfo || (I18n?.t('not_available') || 'Not available');
         
         // Technical contact might be in additional info or contact details
         if (entity.contact && entity.contact.length > 0) {
             const contact = entity.contact[0];
-            info.technicalContact = contact.name || contact.email || 'Not available';
+            info.technicalContact = contact.name || contact.email || (I18n?.t('not_available') || 'Not available');
         }
     }
     
@@ -188,42 +192,43 @@ function displayCompanyInfo(info) {
 
     companyInfoDiv.innerHTML = `
         <div class="info-item">
-            <span class="info-label">🏢 Company Name:</span>
+            <span class="info-label">${I18n?.t('label_company_name') || '🏢 Company Name:'}</span>
             <span class="info-value">${info.companyName}</span>
         </div>
         
         <div class="info-item">
-            <span class="info-label">🧩 Software providers using this accesspoint:</span>
-            <span class="info-value">${info.softwareProviders || 'Unknown'}</span>
+            <span class="info-label">${I18n?.t('label_software_providers') || '🧩 Software providers using this accesspoint:'}</span>
+            <span class="info-value">${info.softwareProviders || (I18n?.t('unknown') || 'Unknown')}</span>
         </div>
         
         <div class="info-item">
-            <span class="info-label">👨‍💼 Technical Contact:</span>
+            <span class="info-label">${I18n?.t('label_technical_contact') || '👨‍💼 Technical Contact:'}</span>
             <span class="info-value">${info.technicalContact}</span>
         </div>
         
         <div class="info-item">
-            <span class="info-label">📡 Access Point:</span>
+            <span class="info-label">${I18n?.t('label_access_point') || '📡 Access Point:'}</span>
             <span class="info-value">${info.accessPointName}</span>
         </div>
         
         <div class="info-item">
-            <span class="info-label">🛰️ Service Endpoint:</span>
+            <span class="info-label">${I18n?.t('label_service_endpoint') || '🛰️ Service Endpoint:'}</span>
             <span class="info-value url">${info.serviceEndpoint}</span>
         </div>
         ${hideSmpHost ? '' : `
         <div class="info-item">
-            <span class="info-label">🔗 SMP Host URI:</span>
+            <span class="info-label">${I18n?.t('label_smp_host_uri') || '🔗 SMP Host URI:'}</span>
             <span class="info-value url">${info.smpHostUri}</span>
         </div>`}
 
         <div class="info-item">
-            <span class="info-label">✅ Peppol Network Status:</span>
-            <span class="info-value">${info.participantExists ? 'Active participant' : 'Not found in network'}</span>
+            <span class="info-label">${I18n?.t('label_network_status') || '✅ Peppol Network Status:'}</span>
+            <span class="info-value">${info.participantExists ? (I18n?.t('network_active') || 'Active participant') : (I18n?.t('network_not_found') || 'Not found in network')}</span>
         </div>
     `;
     
     showSection('results');
+    LAST_COMPANY_INFO = info;
 }
 
 // Main lookup function
@@ -231,7 +236,7 @@ async function performLookup() {
     const input = document.getElementById('companyNumber').value.trim();
     
     if (!input) {
-        showError('Please enter a Belgian VAT or entrepreneur number.');
+        showError(I18n?.t('error_input_required') || 'Please enter a Belgian VAT or entrepreneur number.');
         return;
     }
     
@@ -257,13 +262,13 @@ async function performLookup() {
         
         // Check if participant exists at all
         if (existence && !existence.exists) {
-            showError('This company is not registered in the Peppol network.');
+            showError(I18n?.t('error_not_registered') || 'This company is not registered in the Peppol network.');
             return;
         }
         
         // If no data was retrieved successfully, show error
         if (!existence && !businessCard && !smp) {
-            showError('Unable to retrieve company information. The company may not be registered in the Peppol network or the service is temporarily unavailable.');
+            showError(I18n?.t('error_unable_retrieve') || 'Unable to retrieve company information. The company may not be registered in the Peppol network or the service is temporarily unavailable.');
             return;
         }
         // Extract base company information
@@ -386,7 +391,7 @@ async function performLookup() {
         
     } catch (error) {
         console.error('Lookup error:', error);
-        showError(error.message || 'An unexpected error occurred during lookup.');
+        showError(error.message || I18n?.t('error_lookup_unexpected') || 'An unexpected error occurred during lookup.');
     } finally {
         setButtonLoading(false);
     }
@@ -406,6 +411,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Remove any non-alphanumeric characters except spaces
         let value = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '');
         e.target.value = value;
+    });
+    // Re-render results on language changes
+    document.addEventListener('i18n:applied', () => {
+        if (LAST_COMPANY_INFO) {
+            displayCompanyInfo(LAST_COMPANY_INFO);
+        }
     });
 });
 
