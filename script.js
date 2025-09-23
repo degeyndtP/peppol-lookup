@@ -34,6 +34,8 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'support@billit.com') return 'Billit';
     if (v === 'peppol@teamleader.eu') return 'Teamleader';
     if (v === 'https://codabox.com') return 'Doccle or Clearfacts';
+    if (v === 'support@babelway.com') return 'Mercurius';
+    if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
     return 'Mapping coming soon';
@@ -269,6 +271,16 @@ async function performLookup() {
                             // Capture technical contact
                             if (ep.technicalContactUrl && (!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available')) {
                                 companyInfo.technicalContact = ep.technicalContactUrl;
+                            }
+                            // Set AP directly from specific technical contact rules
+                            if (ep.technicalContactUrl) {
+                                const t = String(ep.technicalContactUrl).toLowerCase();
+                                if (t === 'support@babelway.com') {
+                                    companyInfo.accessPointName = 'Babelway';
+                                }
+                                if (t === 'info@dokapi.io') {
+                                    companyInfo.accessPointName = 'DokApi';
+                                }
                             }
                             // If technical contact is Codabox URL, set AP to Codabox
                             if (ep.technicalContactUrl && String(ep.technicalContactUrl).toLowerCase() === 'https://codabox.com') {
