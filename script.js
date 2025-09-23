@@ -21,6 +21,9 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
             if (match.includes('storecove')) return 'Storecove';
             return match.replace(/^www\./, '');
         }
+        return smpHostUri;
+    }
+}
 
 // Map software providers based on the technical contact email (extend as needed)
 function mapSoftwareProviders(technicalContact, accessPointName) {
@@ -39,9 +42,6 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
     return 'Mapping coming soon';
-}
-        return smpHostUri;
-    }
 }
 
 // Belgian VAT number validation and formatting
