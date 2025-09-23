@@ -42,6 +42,7 @@ header {
     text-align: center;
     margin-bottom: 40px;
     color: var(--tl-text);
+    position: relative;
 }
 
 header h1 {
@@ -56,6 +57,57 @@ header h1 {
     gap: 8px;
     margin-bottom: 12px;
     color: var(--tl-muted);
+}
+
+/* Language switcher positioning and styling */
+.lang-switcher {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.lang-switcher select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: #fff;
+    border: 1.5px solid var(--tl-border);
+    color: var(--tl-text);
+    padding: 6px 28px 6px 10px;
+    font-size: 0.9rem;
+    line-height: 1;
+    border-radius: 999px; /* pill */
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.lang-switcher select:hover {
+    border-color: var(--tl-primary);
+}
+
+.lang-switcher select:focus {
+    outline: none;
+    border-color: var(--tl-primary);
+    box-shadow: 0 0 0 3px rgba(0, 178, 178, 0.18);
+}
+
+/* Optional custom caret using background SVG */
+.lang-switcher select {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%2399A3AD' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+@media (max-width: 600px) {
+    .lang-switcher {
+        top: 8px;
+        right: 8px;
+    }
+    .lang-switcher select {
+        font-size: 0.85rem;
+        padding: 6px 26px 6px 10px;
+    }
 }
 
 .powered-by .brand-logo {

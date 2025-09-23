@@ -64,7 +64,7 @@ function formatBelgianNumber(input) {
     
     // Validate format (should be 10 digits)
     if (!/^\d{10}$/.test(cleaned)) {
-        throw new Error('Invalid format. Belgian VAT/entrepreneur numbers should be 10 digits.');
+        throw new Error(I18n?.t('error_invalid_format') || 'Invalid format. Belgian VAT/entrepreneur numbers should be 10 digits.');
     }
     
     // Format as Peppol participant ID for Belgian companies
@@ -143,22 +143,23 @@ async function fetchPeppolData(endpoint) {
 
 // Extract company information from API responses
 function extractCompanyInfo(businessCardData, smpData, existenceData) {
+    // Use nulls for unknown values; translate only when rendering
     const info = {
-        companyName: I18n?.t('not_available') || 'Not available',
-        technicalContact: I18n?.t('not_available') || 'Not available',
-        country: I18n?.t('not_available') || 'Not available',
-        additionalInfo: I18n?.t('not_available') || 'Not available',
-        smpHostUri: I18n?.t('not_available') || 'Not available',
+        companyName: null,
+        technicalContact: null,
+        country: null,
+        additionalInfo: null,
+        smpHostUri: null,
         participantExists: false,
-        accessPointName: I18n?.t('not_available') || 'Not available',
-        serviceEndpoint: I18n?.t('not_available') || 'Not available'
+        accessPointName: null,
+        serviceEndpoint: null
     };
     
     // Extract existence info
     if (existenceData) {
         info.participantExists = existenceData.exists || false;
-        info.smpHostUri = existenceData.smpHostURI || (I18n?.t('not_available') || 'Not available');
-        if (info.smpHostUri && info.smpHostUri !== (I18n?.t('not_available') || 'Not available')) {
+        info.smpHostUri = existenceData.smpHostURI || null;
+        if (info.smpHostUri) {
             info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
         }
     }
@@ -168,16 +169,16 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         const entity = businessCardData.entity[0];
         
         if (entity.name && entity.name.length > 0) {
-            info.companyName = entity.name[0].name || (I18n?.t('not_available') || 'Not available');
+            info.companyName = entity.name[0].name || null;
         }
         
-        info.country = entity.countrycode || (I18n?.t('not_available') || 'Not available');
-        info.additionalInfo = entity.additionalinfo || (I18n?.t('not_available') || 'Not available');
+        info.country = entity.countrycode || null;
+        info.additionalInfo = entity.additionalinfo || null;
         
         // Technical contact might be in additional info or contact details
         if (entity.contact && entity.contact.length > 0) {
             const contact = entity.contact[0];
-            info.technicalContact = contact.name || contact.email || (I18n?.t('not_available') || 'Not available');
+            info.technicalContact = contact.name || contact.email || null;
         }
     }
     
@@ -190,10 +191,11 @@ function displayCompanyInfo(info) {
 
     const hideSmpHost = (info.technicalContact || '').toString().toLowerCase() === 'peppol@teamleader.eu';
 
+    const notAvail = I18n?.t('not_available') || 'Not available';
     companyInfoDiv.innerHTML = `
         <div class="info-item">
             <span class="info-label">${I18n?.t('label_company_name') || '🏢 Company Name:'}</span>
-            <span class="info-value">${info.companyName}</span>
+            <span class="info-value">${info.companyName || notAvail}</span>
         </div>
         
         <div class="info-item">
@@ -203,22 +205,22 @@ function displayCompanyInfo(info) {
         
         <div class="info-item">
             <span class="info-label">${I18n?.t('label_technical_contact') || '👨‍💼 Technical Contact:'}</span>
-            <span class="info-value">${info.technicalContact}</span>
+            <span class="info-value">${info.technicalContact || notAvail}</span>
         </div>
         
         <div class="info-item">
             <span class="info-label">${I18n?.t('label_access_point') || '📡 Access Point:'}</span>
-            <span class="info-value">${info.accessPointName}</span>
+            <span class="info-value">${info.accessPointName || notAvail}</span>
         </div>
         
         <div class="info-item">
             <span class="info-label">${I18n?.t('label_service_endpoint') || '🛰️ Service Endpoint:'}</span>
-            <span class="info-value url">${info.serviceEndpoint}</span>
+            <span class="info-value url">${info.serviceEndpoint || notAvail}</span>
         </div>
         ${hideSmpHost ? '' : `
         <div class="info-item">
             <span class="info-label">${I18n?.t('label_smp_host_uri') || '🔗 SMP Host URI:'}</span>
-            <span class="info-value url">${info.smpHostUri}</span>
+            <span class="info-value url">${info.smpHostUri || notAvail}</span>
         </div>`}
 
         <div class="info-item">
@@ -287,7 +289,7 @@ async function performLookup() {
                         const endpoints = proc.endpoints || [];
                         for (const ep of endpoints) {
                             // Capture and normalize technical contact (strip mailto: if present)
-                            if (ep.technicalContactUrl && (!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available')) {
+                            if (ep.technicalContactUrl && !companyInfo.technicalContact) {
                                 const rawContact = String(ep.technicalContactUrl);
                                 const normalizedContact = rawContact.toLowerCase().startsWith('mailto:') ? rawContact.slice(7) : rawContact;
                                 companyInfo.technicalContact = normalizedContact;
@@ -371,7 +373,7 @@ async function performLookup() {
                             }
                         }
                         // If we found either technical contact or AP name, we can stop early
-                        if ((companyInfo.technicalContact && companyInfo.technicalContact !== 'Not available') || (companyInfo.accessPointName && companyInfo.accessPointName !== 'Not available')) break;
+                        if (companyInfo.technicalContact || companyInfo.accessPointName) break;
                     }
                 }
             }
