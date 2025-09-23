@@ -12,6 +12,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         const host = url.hostname;
         // Known mappings (extend over time)
         if (host.includes('storecove')) return 'Storecove';
+        if (host === 'smp.peppol.comax.be' || host.includes('comax.be')) return 'Comax';
         // Default to prettified hostname
         return host.replace(/^www\./, '');
     } catch (_) {
@@ -19,6 +20,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         const match = (smpHostUri.match(/https?:\/\/([^\/]*)/) || [])[1];
         if (match) {
             if (match.includes('storecove')) return 'Storecove';
+            if (match === 'smp.peppol.comax.be' || match.includes('comax.be')) return 'Comax';
             return match.replace(/^www\./, '');
         }
         return smpHostUri;
@@ -141,7 +143,8 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         additionalInfo: 'Not available',
         smpHostUri: 'Not available',
         participantExists: false,
-        accessPointName: 'Not available'
+        accessPointName: 'Not available',
+        serviceEndpoint: 'Not available'
     };
     
     // Extract existence info
@@ -199,6 +202,11 @@ function displayCompanyInfo(info) {
             <span class="info-value">${info.accessPointName}</span>
         </div>
         
+        <div class="info-item">
+            <span class="info-label">🛰️ Service Endpoint:</span>
+            <span class="info-value url">${info.serviceEndpoint}</span>
+        </div>
+
         <div class="info-item">
             <span class="info-label">🔗 SMP Host URI:</span>
             <span class="info-value url">${info.smpHostUri}</span>
@@ -285,16 +293,22 @@ async function performLookup() {
                                 if (t === 'info@dokapi.io') {
                                     companyInfo.accessPointName = 'DokApi';
                                 }
+                                if (t === 'peppol@teamleader.eu') {
+                                    companyInfo.accessPointName = 'Teamleader';
+                                    companyInfo.softwareProviders = 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
+                                }
                             }
                             // If technical contact is Codabox URL, set AP to Codabox
                             if (ep.technicalContactUrl && String(ep.technicalContactUrl).toLowerCase() === 'https://codabox.com') {
                                 companyInfo.accessPointName = 'Codabox';
                             }
                             // Determine Access Point more accurately if not already a known name
-                            if (ep.endpointReference && (companyInfo.accessPointName === 'Not available' || /elb\.amazonaws\.com/i.test(companyInfo.smpHostUri))) {
+                            if (ep.endpointReference) {
                                 try {
                                     const url = new URL(ep.endpointReference);
                                     const host = url.hostname.toLowerCase();
+                                    // Record service endpoint by default; may be overridden by special cases
+                                    companyInfo.serviceEndpoint = ep.endpointReference;
                                     if (host.includes('tradeinterop')) {
                                         companyInfo.accessPointName = 'Tradeinterop';
                                     } else if (host.includes('storecove')) {
@@ -317,6 +331,11 @@ async function performLookup() {
                             if (ep.endpointReference === 'https://ap.hermes-belgium.be/as4') {
                                 companyInfo.accessPointName = 'Ixor Docs';
                                 companyInfo.softwareProviders = 'Hermes';
+                                companyInfo.serviceEndpoint = ep.endpointReference;
+                            }
+                            // If Teamleader contact, override service endpoint to Teamleader AS4
+                            if (companyInfo.accessPointName === 'Teamleader') {
+                                companyInfo.serviceEndpoint = 'https://peppol.teamleader.eu/as4';
                             }
                             // Also check certificate subject organization or service description for AP name
                             const subj = ep.certificateDetails && ep.certificateDetails.subject && ep.certificateDetails.subject.O;
