@@ -27,7 +27,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
 
 // Map software providers based on the technical contact email (extend as needed)
 function mapSoftwareProviders(technicalContact, accessPointName) {
-    if (!technicalContact && !accessPointName) return 'Mapping coming soon';
+    if (!technicalContact && !accessPointName) return 'Unknown';
     const v = (technicalContact || '').toString().toLowerCase();
     const ap = (accessPointName || '').toString();
     // Direct email/URL mappings
@@ -41,7 +41,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
-    return 'Mapping coming soon';
+    return 'Unknown';
 }
 
 // Belgian VAT number validation and formatting
@@ -185,13 +185,8 @@ function displayCompanyInfo(info) {
         </div>
         
         <div class="info-item">
-            <span class="info-label">📡 Access Point:</span>
-            <span class="info-value">${info.accessPointName}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">🔗 SMP Host URI:</span>
-            <span class="info-value url">${info.smpHostUri}</span>
+            <span class="info-label">🧩 Software providers using this accesspoint:</span>
+            <span class="info-value">${info.softwareProviders || 'Unknown'}</span>
         </div>
         
         <div class="info-item">
@@ -200,8 +195,13 @@ function displayCompanyInfo(info) {
         </div>
         
         <div class="info-item">
-            <span class="info-label">🧩 Software providers using this accesspoint:</span>
-            <span class="info-value">${info.softwareProviders || 'Mapping coming soon'}</span>
+            <span class="info-label">📡 Access Point:</span>
+            <span class="info-value">${info.accessPointName}</span>
+        </div>
+        
+        <div class="info-item">
+            <span class="info-label">🔗 SMP Host URI:</span>
+            <span class="info-value url">${info.smpHostUri}</span>
         </div>
 
         <div class="info-item">
@@ -268,15 +268,19 @@ async function performLookup() {
                     for (const proc of processes) {
                         const endpoints = proc.endpoints || [];
                         for (const ep of endpoints) {
-                            // Capture technical contact
+                            // Capture and normalize technical contact (strip mailto: if present)
                             if (ep.technicalContactUrl && (!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available')) {
-                                companyInfo.technicalContact = ep.technicalContactUrl;
+                                const rawContact = String(ep.technicalContactUrl);
+                                const normalizedContact = rawContact.toLowerCase().startsWith('mailto:') ? rawContact.slice(7) : rawContact;
+                                companyInfo.technicalContact = normalizedContact;
                             }
                             // Set AP directly from specific technical contact rules
                             if (ep.technicalContactUrl) {
-                                const t = String(ep.technicalContactUrl).toLowerCase();
+                                const raw = String(ep.technicalContactUrl);
+                                const t = raw.toLowerCase().startsWith('mailto:') ? raw.slice(7).toLowerCase() : raw.toLowerCase();
                                 if (t === 'support@babelway.com') {
                                     companyInfo.accessPointName = 'Babelway';
+                                    companyInfo.softwareProviders = 'Mercurius';
                                 }
                                 if (t === 'info@dokapi.io') {
                                     companyInfo.accessPointName = 'DokApi';
