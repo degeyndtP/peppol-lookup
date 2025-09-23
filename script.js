@@ -4,6 +4,27 @@ const NETLIFY_PROXY = '/.netlify/functions/helger-proxy?endpoint='; // works on 
 // Always use production SML
 const SML_ID = 'digitprod';
 
+// Derive a human-readable Access Point name from an SMP Host URI
+function getAccessPointNameFromSmpUri(smpHostUri) {
+    if (!smpHostUri || typeof smpHostUri !== 'string') return 'Not available';
+    try {
+        const url = new URL(smpHostUri);
+        const host = url.hostname;
+        // Known mappings (extend over time)
+        if (host.includes('storecove')) return 'Storecove';
+        // Default to prettified hostname
+        return host.replace(/^www\./, '');
+    } catch (_) {
+        // Fallback if not a valid URL
+        const match = (smpHostUri.match(/https?:\/\/([^\/]*)/) || [])[1];
+        if (match) {
+            if (match.includes('storecove')) return 'Storecove';
+            return match.replace(/^www\./, '');
+        }
+        return smpHostUri;
+    }
+}
+
 // Belgian VAT number validation and formatting
 function formatBelgianNumber(input) {
     // Remove spaces and convert to uppercase
@@ -100,13 +121,17 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         country: 'Not available',
         additionalInfo: 'Not available',
         smpHostUri: 'Not available',
-        participantExists: false
+        participantExists: false,
+        accessPointName: 'Not available'
     };
     
     // Extract existence info
     if (existenceData) {
         info.participantExists = existenceData.exists || false;
         info.smpHostUri = existenceData.smpHostURI || 'Not available';
+        if (info.smpHostUri && info.smpHostUri !== 'Not available') {
+            info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
+        }
     }
     
     // Extract business card info
@@ -133,7 +158,7 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
 // Display company information
 function displayCompanyInfo(info) {
     const companyInfoDiv = document.getElementById('companyInfo');
-    
+
     companyInfoDiv.innerHTML = `
         <div class="info-item">
             <span class="info-label">🏢 Company Name:</span>
@@ -141,13 +166,8 @@ function displayCompanyInfo(info) {
         </div>
         
         <div class="info-item">
-            <span class="info-label">🌍 Country:</span>
-            <span class="info-value">${info.country}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">ℹ️ Additional Information:</span>
-            <span class="info-value">${info.additionalInfo}</span>
+            <span class="info-label">📡 Access Point:</span>
+            <span class="info-value">${info.accessPointName}</span>
         </div>
         
         <div class="info-item">
@@ -160,6 +180,11 @@ function displayCompanyInfo(info) {
             <span class="info-value">${info.technicalContact}</span>
         </div>
         
+        <div class="info-item">
+            <span class="info-label">🧩 Software providers using this accesspoint:</span>
+            <span class="info-value">Mapping coming soon</span>
+        </div>
+
         <div class="info-item">
             <span class="info-label">✅ Peppol Network Status:</span>
             <span class="info-value">${info.participantExists ? 'Active participant' : 'Not found in network'}</span>
