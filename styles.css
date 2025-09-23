@@ -63,6 +63,13 @@ header h1 {
     margin: 0;
 }
 
+<<<<<<< HEAD
+=======
+.brand-svg {
+    height: 24px;
+}
+
+>>>>>>> 6be8465 (Header: replace Peppol logo with Teamleader powered-by; add teamleader-logo.png)
 .brand-logo {
     height: 32px;
     vertical-align: middle;
