@@ -38,7 +38,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'support@okioki.be') return 'OkiOki';
     if (v === 'support@billit.com') return 'Billit';
     if (v === 'peppol@teamleader.eu') return 'Teamleader';
-    if (v === 'https://codabox.com') return 'Doccle or Clearfacts';
+    if (v === 'https://codabox.com') return 'Doccle, Clearfacts or Eenvoudigfactureren.be';
     if (v === 'support@babelway.com') return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
     if (v === 'support@e-invoice.be') return 'e-invoice.be';
