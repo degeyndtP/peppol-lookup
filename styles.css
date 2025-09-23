@@ -50,6 +50,19 @@ header h1 {
     font-weight: 700;
 }
 
+.powered-by {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--tl-muted);
+}
+
+.powered-by .brand-logo {
+    height: 24px;
+    margin: 0;
+}
+
 .brand-logo {
     height: 32px;
     vertical-align: middle;
