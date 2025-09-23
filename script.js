@@ -42,6 +42,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'support@babelway.com') return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
     if (v === 'support@e-invoice.be') return 'e-invoice.be';
+    if (v === 'support@onfact.be') return 'OnFact';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
     return 'Unknown';
@@ -303,6 +304,10 @@ async function performLookup() {
                                 if (t === 'support@e-invoice.be') {
                                     companyInfo.accessPointName = 'e-invoice';
                                     companyInfo.softwareProviders = 'e-invoice.be';
+                                }
+                                if (t === 'support@onfact.be') {
+                                    companyInfo.accessPointName = 'Infinwebs BV';
+                                    companyInfo.softwareProviders = 'OnFact';
                                 }
                             }
                             // If technical contact is Codabox URL, set AP to Codabox
