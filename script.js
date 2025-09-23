@@ -21,6 +21,23 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
             if (match.includes('storecove')) return 'Storecove';
             return match.replace(/^www\./, '');
         }
+
+// Map software providers based on the technical contact email (extend as needed)
+function mapSoftwareProviders(technicalContact, accessPointName) {
+    if (!technicalContact && !accessPointName) return 'Mapping coming soon';
+    const v = (technicalContact || '').toString().toLowerCase();
+    const ap = (accessPointName || '').toString();
+    // Direct email/URL mappings
+    if (v === 'openpeppol@exact.com') return 'Exact Online';
+    if (v === 'peppol@storecove.com') return 'Accountable, Lucy or Yuki';
+    if (v === 'support@okioki.be') return 'OkiOki';
+    if (v === 'support@billit.com') return 'Billit';
+    if (v === 'peppol@teamleader.eu') return 'Teamleader';
+    if (v === 'https://codabox.com') return 'Doccle or Clearfacts';
+    // AP-name-specific mapping
+    if (ap === 'Tradeshift Belgium') return 'Mercurius';
+    return 'Mapping coming soon';
+}
         return smpHostUri;
     }
 }
@@ -182,7 +199,7 @@ function displayCompanyInfo(info) {
         
         <div class="info-item">
             <span class="info-label">🧩 Software providers using this accesspoint:</span>
-            <span class="info-value">Mapping coming soon</span>
+            <span class="info-value">${info.softwareProviders || 'Mapping coming soon'}</span>
         </div>
 
         <div class="info-item">
@@ -237,9 +254,9 @@ async function performLookup() {
         // Extract base company information
         const companyInfo = extractCompanyInfo(businessCard, smp, existence);
 
-        // If technical contact not found yet, try to get it from a detailed SMP endpoint lookup
+        // Enrich with detailed SMP endpoint lookup to determine technical contact and access point when needed
         try {
-            if ((!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available') && smp && smp.urls && smp.urls.length > 0) {
+            if (smp && smp.urls && smp.urls.length > 0) {
                 // Prefer the UBL Invoice doc type if present, otherwise use the first
                 let preferred = smp.urls.find(u => (u.documentTypeID || '').includes('Invoice-2')) || smp.urls[0];
                 const docTypeID = preferred.documentTypeID;
@@ -249,18 +266,67 @@ async function performLookup() {
                     for (const proc of processes) {
                         const endpoints = proc.endpoints || [];
                         for (const ep of endpoints) {
-                            if (ep.technicalContactUrl) {
+                            // Capture technical contact
+                            if (ep.technicalContactUrl && (!companyInfo.technicalContact || companyInfo.technicalContact === 'Not available')) {
                                 companyInfo.technicalContact = ep.technicalContactUrl;
-                                break;
+                            }
+                            // If technical contact is Codabox URL, set AP to Codabox
+                            if (ep.technicalContactUrl && String(ep.technicalContactUrl).toLowerCase() === 'https://codabox.com') {
+                                companyInfo.accessPointName = 'Codabox';
+                            }
+                            // Determine Access Point more accurately if not already a known name
+                            if (ep.endpointReference && (companyInfo.accessPointName === 'Not available' || /elb\.amazonaws\.com/i.test(companyInfo.smpHostUri))) {
+                                try {
+                                    const url = new URL(ep.endpointReference);
+                                    const host = url.hostname.toLowerCase();
+                                    if (host.includes('tradeinterop')) {
+                                        companyInfo.accessPointName = 'Tradeinterop';
+                                    } else if (host.includes('storecove')) {
+                                        companyInfo.accessPointName = 'Storecove';
+                                    } else if (host.includes('hermes-belgium.be')) {
+                                        // Hermes endpoint implies AP Ixor Docs
+                                        companyInfo.accessPointName = 'Ixor Docs';
+                                        companyInfo.softwareProviders = 'Hermes';
+                                    } else if (host.includes('tradeshift')) {
+                                        // For Belgian participants, denote Tradeshift Belgium
+                                        if (companyInfo.country === 'BE') {
+                                            companyInfo.accessPointName = 'Tradeshift Belgium';
+                                        } else {
+                                            companyInfo.accessPointName = 'Tradeshift';
+                                        }
+                                    }
+                                } catch (_) { /* ignore */ }
+                            }
+                            // Explicit Hermes endpoint URL check
+                            if (ep.endpointReference === 'https://ap.hermes-belgium.be/as4') {
+                                companyInfo.accessPointName = 'Ixor Docs';
+                                companyInfo.softwareProviders = 'Hermes';
+                            }
+                            // Also check certificate subject organization or service description for AP name
+                            const subj = ep.certificateDetails && ep.certificateDetails.subject && ep.certificateDetails.subject.O;
+                            if (subj && typeof subj === 'string') {
+                                const org = subj.toLowerCase();
+                                if (org.includes('tradeinterop')) companyInfo.accessPointName = 'Tradeinterop';
+                                if (org.includes('storecove')) companyInfo.accessPointName = 'Storecove';
+                            }
+                            if (ep.serviceDescription && /tradeinterop/i.test(ep.serviceDescription)) {
+                                companyInfo.accessPointName = 'Tradeinterop';
                             }
                         }
-                        if (companyInfo.technicalContact && companyInfo.technicalContact !== 'Not available') break;
+                        // If we found either technical contact or AP name, we can stop early
+                        if ((companyInfo.technicalContact && companyInfo.technicalContact !== 'Not available') || (companyInfo.accessPointName && companyInfo.accessPointName !== 'Not available')) break;
                     }
                 }
             }
         } catch (e) {
             // Ignore errors in technical contact enrichment, continue showing base info
             console.warn('Technical contact enrichment failed:', e);
+        }
+
+        // Derive software providers mapping from technical contact
+        // Only set via mapping if not determined by special-case (e.g., Hermes)
+        if (!companyInfo.softwareProviders) {
+            companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
         }
 
         // Display company information
