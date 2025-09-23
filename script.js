@@ -181,6 +181,8 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
 function displayCompanyInfo(info) {
     const companyInfoDiv = document.getElementById('companyInfo');
 
+    const hideSmpHost = (info.technicalContact || '').toString().toLowerCase() === 'peppol@teamleader.eu';
+
     companyInfoDiv.innerHTML = `
         <div class="info-item">
             <span class="info-label">🏢 Company Name:</span>
@@ -206,11 +208,11 @@ function displayCompanyInfo(info) {
             <span class="info-label">🛰️ Service Endpoint:</span>
             <span class="info-value url">${info.serviceEndpoint}</span>
         </div>
-
+        ${hideSmpHost ? '' : `
         <div class="info-item">
             <span class="info-label">🔗 SMP Host URI:</span>
             <span class="info-value url">${info.smpHostUri}</span>
-        </div>
+        </div>`}
 
         <div class="info-item">
             <span class="info-label">✅ Peppol Network Status:</span>
