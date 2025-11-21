@@ -265,20 +265,32 @@ function displayCompanyInfoPair(info0208, info9925) {
             ${text}
         </div>`;
 
-    // If both missing -> show CTA only
+    // If both missing -> show ResultsDisplay card with CTA and secondary action
     if (!exists0208 && !exists9925) {
         const lang = (window.I18n?.current || 'en');
         const allowed = ['en','nl','fr'];
         const l = allowed.includes(lang) ? lang : 'en';
         const url = `https://signup.teamleader.eu/?country=BE&lang=${l}`;
         companyInfoDiv.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start; width:100%;">
-                <div style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:14px 16px; border-radius:10px; font-weight:600;">
-                    ${I18n?.t('msg_not_on_peppol') || 'You are not on Peppol'}
+            <div class="results-display" role="region" aria-live="polite">
+                <div class="rd-row">
+                    <div class="illus" aria-hidden="true">
+                        <div class="dot"></div>
+                        <div class="bar1"></div>
+                        <div class="bar2"></div>
+                    </div>
+                    <div class="rd-col">
+                        <div class="heading2">${I18n?.t('both_not_found_title') || (I18n?.t('msg_not_on_peppol') || 'You are not on Peppol')}</div>
+                        <div class="paragraph">${I18n?.t('both_not_found_paragraph') || 'The number you entered is not currently registered'}</div>
+                    </div>
                 </div>
-                <a href="${url}" target="_blank" rel="noopener" style="display:inline-block; background:#2563eb; color:#fff; padding:10px 14px; border-radius:8px; text-decoration:none; font-weight:600;">
-                    ${I18n?.t('cta_start_peppol') || 'Start with Peppol'}
-                </a>
+                <div class="actions">
+                    <div class="heading3">${I18n?.t('both_not_found_actions_title') || 'What would you like to do?'}</div>
+                    <div class="btn-row">
+                        <a class="btn-primary" href="${url}" target="_blank" rel="noopener">${I18n?.t('cta_start_peppol') || 'Start with Peppol'}</a>
+                        <button class="btn-secondary" type="button" onclick="(function(){ const el=document.getElementById('companyNumber'); if(el){ el.focus(); el.select && el.select(); } })()">${I18n?.t('both_not_found_secondary') || 'Try another number'}</button>
+                    </div>
+                </div>
             </div>
         `;
         showSection('results');
