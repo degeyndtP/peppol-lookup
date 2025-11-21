@@ -110,7 +110,8 @@ function setButtonLoading(loading) {
     const btnSpinner = document.getElementById('btnSpinner');
     
     btn.disabled = loading;
-    if (btnText) btnText.style.display = loading ? 'none' : 'inline';
+    // Keep text visible; spinner may not exist
+    if (btnText) btnText.style.display = 'inline';
     if (btnSpinner) btnSpinner.style.display = loading ? 'inline' : 'none';
 }
 
