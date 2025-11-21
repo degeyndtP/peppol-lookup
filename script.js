@@ -256,12 +256,24 @@ function displayCompanyInfoPair(info0208, info9925) {
     } catch(_) { /* ignore */ }
     const h0208 = 'Result for Belgium entrepreneur number';
     const h9925 = 'Result for Belgium VAT number';
-    companyInfoDiv.innerHTML = `
-        <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
-            ${buildCompanyInfoHtml(info0208, h0208)}
-            ${buildCompanyInfoHtml(info9925, h9925)}
-        </div>
-    `;
+    const sameAP = (
+        info0208?.accessPointName && info9925?.accessPointName &&
+        String(info0208.accessPointName).toLowerCase() === String(info9925.accessPointName).toLowerCase()
+    );
+    if (sameAP) {
+        companyInfoDiv.innerHTML = `
+            <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
+                ${buildCompanyInfoHtml(info0208, h0208)}
+            </div>
+        `;
+    } else {
+        companyInfoDiv.innerHTML = `
+            <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
+                ${buildCompanyInfoHtml(info0208, h0208)}
+                ${buildCompanyInfoHtml(info9925, h9925)}
+            </div>
+        `;
+    }
     showSection('results');
     LAST_COMPANY_INFO = { info0208, info9925 };
 }
