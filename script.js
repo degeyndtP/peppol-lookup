@@ -244,10 +244,20 @@ function buildCompanyInfoHtml(info, heading) {
 // Display two company information panels side-by-side
 function displayCompanyInfoPair(info0208, info9925) {
     const companyInfoDiv = document.getElementById('companyInfo');
-    const h0208 = `${I18n?.t('label_scheme') || 'Scheme'} 0208`;
-    const h9925 = `${I18n?.t('label_scheme') || 'Scheme'} 9925`;
+    // Widen layout to use more of the page width
+    try {
+        companyInfoDiv.style.maxWidth = '1400px';
+        companyInfoDiv.style.margin = '0 auto';
+        companyInfoDiv.style.width = '100%';
+        const results = document.getElementById('results');
+        if (results) {
+            results.style.maxWidth = '100%';
+        }
+    } catch(_) { /* ignore */ }
+    const h0208 = 'Result for Belgium entrepreneur number';
+    const h9925 = 'Result for Belgium entrepreneur number';
     companyInfoDiv.innerHTML = `
-        <div style="display:flex; gap:16px; align-items:stretch; flex-wrap:wrap;">
+        <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
             ${buildCompanyInfoHtml(info0208, h0208)}
             ${buildCompanyInfoHtml(info9925, h9925)}
         </div>
