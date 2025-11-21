@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peppol lookup</title>
+    <title>Check your Peppol registration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
                     <option value="fr">FR</option>
                 </select>
             </div>
-            <h1 data-i18n="title">Peppol lookup</h1>
+            <h1 data-i18n="title">Check your Peppol registration</h1>
             <div class="powered-by">
                 <span data-i18n="powered_by">powered by</span>
                 <a href="https://www.teamleader.eu/" target="_blank" rel="noopener noreferrer" class="brand-link" aria-label="Teamleader">
@@ -37,29 +37,27 @@
         </header>
 
         <main>
-            <div class="search-section">
-                <div class="form-card" role="search" aria-labelledby="searchTitle">
-                    <div class="form-desc">
-                        <div id="searchTitle" class="form-title" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</div>
-                        <div class="form-example" data-i18n="input_placeholder">e.g., BE0123456789 or 0123456789</div>
+            <div class="form-card" role="search" aria-labelledby="searchTitle">
+                <div class="form-desc">
+                    <div id="searchTitle" class="form-title" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</div>
+                    <div class="form-example" data-i18n="input_placeholder">e.g., BE0123456789 or 0123456789</div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="sr-only" for="companyNumber" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</label>
+                        <input 
+                            class="form-input"
+                            type="text" 
+                            id="companyNumber" 
+                            data-i18n-placeholder="input_placeholder"
+                            placeholder="e.g., BE0123456789 or 0123456789"
+                            maxlength="20"
+                        >
                     </div>
-                    <div class="form-row">
-                        <div class="form-field">
-                            <label class="sr-only" for="companyNumber" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</label>
-                            <input 
-                                class="form-input"
-                                type="text" 
-                                id="companyNumber" 
-                                data-i18n-placeholder="input_placeholder"
-                                placeholder="e.g., BE0123456789 or 0123456789"
-                                maxlength="20"
-                            >
-                        </div>
-                        <button id="lookupBtn" class="form-button" onclick="performLookup()">
-                            <span id="btnText" data-i18n="lookup_button">Lookup</span>
-                            <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
-                        </button>
-                    </div>
+                    <button id="lookupBtn" class="form-button" onclick="performLookup()">
+                        <span id="btnText" data-i18n="lookup_button">Lookup</span>
+                        <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
+                    </button>
                 </div>
             </div>
 
