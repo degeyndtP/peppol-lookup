@@ -110,8 +110,8 @@ function setButtonLoading(loading) {
     const btnSpinner = document.getElementById('btnSpinner');
     
     btn.disabled = loading;
-    btnText.style.display = loading ? 'none' : 'inline';
-    btnSpinner.style.display = loading ? 'inline' : 'none';
+    if (btnText) btnText.style.display = loading ? 'none' : 'inline';
+    if (btnSpinner) btnSpinner.style.display = loading ? 'inline' : 'none';
 }
 
 // Format participant ID for URL encoding
@@ -201,7 +201,6 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
 
 // Build HTML block for a single company info panel
 function buildCompanyInfoHtml(info, heading) {
-    const hideSmpHost = (info.technicalContact || '').toString().toLowerCase() === 'peppol@teamleader.eu';
     const notAvail = I18n?.t('not_available') || 'Not available';
     return `
         <div role="group" aria-label="${heading}" style="flex:1; min-width:320px; padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;">
@@ -223,19 +222,6 @@ function buildCompanyInfoHtml(info, heading) {
             <div class="info-item">
                 <span class="info-label">${I18n?.t('label_access_point') || '📡 Access Point:'}</span>
                 <span class="info-value">${info.accessPointName || notAvail}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">${I18n?.t('label_service_endpoint') || '🛰️ Service Endpoint:'}</span>
-                <span class="info-value url">${info.serviceEndpoint || notAvail}</span>
-            </div>
-            ${hideSmpHost ? '' : `
-            <div class="info-item">
-                <span class="info-label">${I18n?.t('label_smp_host_uri') || '🔗 SMP Host URI:'}</span>
-                <span class="info-value url">${info.smpHostUri || notAvail}</span>
-            </div>`}
-            <div class="info-item">
-                <span class="info-label">${I18n?.t('label_network_status') || '✅ Peppol Network Status:'}</span>
-                <span class="info-value">${info.participantExists ? (I18n?.t('network_active') || 'Active participant') : (I18n?.t('network_not_found') || 'Not found in network')}</span>
             </div>
         </div>
     `;
