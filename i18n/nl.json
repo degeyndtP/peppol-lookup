@@ -39,6 +39,6 @@
 
   "msg_not_on_peppol": "Je bent niet aangesloten op Peppol",
   "cta_start_peppol": "Start met Peppol",
-  "msg_0208_missing": "0208 is niet geregistreerd op Peppol",
-  "msg_9925_missing": "9925 is niet geregistreerd op Peppol"
+  "msg_0208_missing": "Ondernemingsnummer is niet geregistreerd op Peppol",
+  "msg_9925_missing": "Btw-nummer is niet geregistreerd op Peppol"
 }

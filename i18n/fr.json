@@ -39,6 +39,6 @@
 
   "msg_not_on_peppol": "Vous n’êtes pas sur Peppol",
   "cta_start_peppol": "Commencer avec Peppol",
-  "msg_0208_missing": "0208 n’est pas enregistré sur Peppol",
-  "msg_9925_missing": "9925 n’est pas enregistré sur Peppol"
+  "msg_0208_missing": "Le numéro d’entreprise n’est pas enregistré sur Peppol",
+  "msg_9925_missing": "Le numéro de TVA n’est pas enregistré sur Peppol"
 }
