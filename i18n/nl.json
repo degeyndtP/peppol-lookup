@@ -47,5 +47,8 @@
   "both_not_found_title": "Niet geregistreerd op het Peppol-netwerk",
   "both_not_found_paragraph": "Je bent momenteel niet geregistreerd op het Peppol-netwerk en kunt geen facturen ontvangen.",
   "both_not_found_actions_title": "Wat wil je doen?",
-  "both_not_found_secondary": "Meer weten over Peppol?"
+  "both_not_found_secondary": "Meer weten over Peppol?",
+  "hermes_warn_title": "Je huidige Peppol-verbinding stopt op 31/12/2025",
+  "hermes_warn_subtitle": "Je gebruikt het overheidsplatform Hermes om facturen via Peppol te ontvangen. Dit stopt op 31/12/2025",
+  "hermes_warn_cta": "Activeer Peppol met Teamleader"
 }

@@ -324,7 +324,35 @@ function displayCompanyInfoPair(info0208, info9925) {
         bottomBanner = banner(I18n?.t('msg_0208_missing') || '0208 is not registered on Peppol');
     }
 
-    companyInfoDiv.innerHTML = parts.join('\n') + (bottomBanner ? `\n<div style="margin-top:12px;">${bottomBanner}</div>` : '');
+    // Append Hermes deprecation warning card if any result uses Hermes
+    const usesHermes = [info0208, info9925].some(i => i && typeof i.softwareProviders === 'string' && /hermes/i.test(i.softwareProviders));
+    let hermesCard = '';
+    if (usesHermes) {
+        const lang = (window.I18n?.current || 'en');
+        const allowed = ['en','nl','fr'];
+        const l = allowed.includes(lang) ? lang : 'en';
+        const url = `https://signup.teamleader.eu/?country=BE&lang=${l}`;
+        hermesCard = `
+            <div class="results-display" role="region" aria-live="polite" style="margin-top:12px;">
+                <div class="rd-row">
+                    <div class="illus" aria-hidden="true">
+                        <div class="dot"></div>
+                        <div class="bar1"></div>
+                        <div class="bar2"></div>
+                    </div>
+                    <div class="rd-col">
+                        <div class="heading2">${I18n?.t('hermes_warn_title') || 'Your current Peppol connection will stop 31/12/2025'}</div>
+                        <div class="paragraph">${I18n?.t('hermes_warn_subtitle') || 'You are using the government Hermes platform to receive invoices via Peppol. This will stop working 31/12/2025'}</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <div class="btn-row">
+                        <a class="btn-primary" href="${url}" target="_blank" rel="noopener">${I18n?.t('hermes_warn_cta') || 'Enable Peppol with Teamleader'}</a>
+                    </div>
+                </div>
+            </div>`;
+    }
+    companyInfoDiv.innerHTML = parts.join('\n') + (bottomBanner ? `\n<div style="margin-top:12px;">${bottomBanner}</div>` : '') + (hermesCard ? `\n${hermesCard}` : '');
     showSection('results');
     LAST_COMPANY_INFO = { info0208, info9925 };
 }
