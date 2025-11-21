@@ -287,6 +287,105 @@ main {
     margin-bottom: 30px;
 }
 
+/* New lookup form design */
+.form-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 18px;
+    gap: 18px;
+    background: #FFFFFF; /* Neutral/100 */
+    box-shadow: 0px 2px 6px rgba(42, 59, 77, 0.24); /* Depths/Level 2 */
+    border-radius: 4px;
+}
+
+.form-desc {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.form-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 24px;
+    color: #000000;
+}
+
+.form-example {
+    margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 18px;
+    color: #647990; /* Teal/300-Normal (approx) */
+}
+
+.form-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    flex: 1;
+}
+
+.form-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 54px;
+    background: #FFFFFF;
+    border: 1px solid #C0C0C4; /* Neutral/400-Dark */
+    border-radius: 4px;
+    padding: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: #191B1F; /* Neutral/500-Darkest replacement */
+}
+
+.form-input::placeholder {
+    color: #82828C;
+}
+
+.form-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    gap: 6px;
+    height: 54px;
+    min-width: 167px;
+    background: #00B3B3; /* Mint/300 */
+    border: 1px solid #00878A; /* Mint/400 */
+    border-radius: 4px;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 20px; /* Use 20px to better fit button height */
+    line-height: 24px;
+    cursor: pointer;
+}
+
+.form-button:hover { filter: brightness(0.98); }
+.form-button:active { transform: translateY(0.5px); }
+
+@media (max-width: 720px) {
+    .form-row { flex-direction: column; }
+    .form-button { width: 100%; }
+}
+
 .input-group {
     margin-bottom: 20px;
 }

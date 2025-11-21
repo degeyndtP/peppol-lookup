@@ -38,21 +38,29 @@
 
         <main>
             <div class="search-section">
-                <div class="input-group">
-                    <label for="companyNumber" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</label>
-                    <input 
-                        type="text" 
-                        id="companyNumber" 
-                        data-i18n-placeholder="input_placeholder"
-                        placeholder="e.g., BE0123456789 or 0123456789"
-                        maxlength="20"
-                    >
-                    <button id="lookupBtn" onclick="performLookup()">
-                        <span id="btnText" data-i18n="lookup_button">Lookup</span>
-                        <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
-                    </button>
+                <div class="form-card" role="search" aria-labelledby="searchTitle">
+                    <div class="form-desc">
+                        <div id="searchTitle" class="form-title" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</div>
+                        <div class="form-example" data-i18n="input_placeholder">e.g., BE0123456789 or 0123456789</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="sr-only" for="companyNumber" data-i18n="input_label">Belgian VAT or Entrepreneur Number:</label>
+                            <input 
+                                class="form-input"
+                                type="text" 
+                                id="companyNumber" 
+                                data-i18n-placeholder="input_placeholder"
+                                placeholder="e.g., BE0123456789 or 0123456789"
+                                maxlength="20"
+                            >
+                        </div>
+                        <button id="lookupBtn" class="form-button" onclick="performLookup()">
+                            <span id="btnText" data-i18n="lookup_button">Lookup</span>
+                            <span id="btnSpinner" class="spinner" style="display: none;">⏳</span>
+                        </button>
+                    </div>
                 </div>
-                
             </div>
 
             <div id="results" class="results-section" style="display: none;">
