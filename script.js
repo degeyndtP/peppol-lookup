@@ -72,6 +72,20 @@ function formatBelgianNumber(input) {
     return `iso6523-actorid-upis::0208:${cleaned}`;
 }
 
+// Belgian VAT number formatted for scheme 9925 with BE prefix (BEXXXXXXXXXX)
+function formatBelgianNumber9925(input) {
+    // Remove spaces and convert to uppercase
+    let cleaned = input.replace(/\s/g, '').toUpperCase();
+    if (cleaned.startsWith('BE')) {
+        cleaned = cleaned.substring(2);
+    }
+    if (!/^\d{10}$/.test(cleaned)) {
+        throw new Error(I18n?.t('error_invalid_format') || 'Invalid format. Belgian VAT/entrepreneur numbers should be 10 digits.');
+    }
+    // Scheme 9925 requires the BE prefix before the number
+    return `iso6523-actorid-upis::9925:BE${cleaned}`;
+}
+
 // Show/hide UI sections
 function showSection(sectionId) {
     document.getElementById('results').style.display = 'none';
@@ -185,52 +199,196 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
     return info;
 }
 
-// Display company information
-function displayCompanyInfo(info) {
-    const companyInfoDiv = document.getElementById('companyInfo');
-
+// Build HTML block for a single company info panel
+function buildCompanyInfoHtml(info, heading) {
     const hideSmpHost = (info.technicalContact || '').toString().toLowerCase() === 'peppol@teamleader.eu';
-
     const notAvail = I18n?.t('not_available') || 'Not available';
-    companyInfoDiv.innerHTML = `
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_company_name') || '🏢 Company Name:'}</span>
-            <span class="info-value">${info.companyName || notAvail}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_software_providers') || '🧩 Software providers using this accesspoint:'}</span>
-            <span class="info-value">${info.softwareProviders || (I18n?.t('unknown') || 'Unknown')}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_technical_contact') || '👨‍💼 Technical Contact:'}</span>
-            <span class="info-value">${info.technicalContact || notAvail}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_access_point') || '📡 Access Point:'}</span>
-            <span class="info-value">${info.accessPointName || notAvail}</span>
-        </div>
-        
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_service_endpoint') || '🛰️ Service Endpoint:'}</span>
-            <span class="info-value url">${info.serviceEndpoint || notAvail}</span>
-        </div>
-        ${hideSmpHost ? '' : `
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_smp_host_uri') || '🔗 SMP Host URI:'}</span>
-            <span class="info-value url">${info.smpHostUri || notAvail}</span>
-        </div>`}
-
-        <div class="info-item">
-            <span class="info-label">${I18n?.t('label_network_status') || '✅ Peppol Network Status:'}</span>
-            <span class="info-value">${info.participantExists ? (I18n?.t('network_active') || 'Active participant') : (I18n?.t('network_not_found') || 'Not found in network')}</span>
+    return `
+        <div style="flex:1; min-width:280px; padding:12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff;">
+            <div class="info-item" style="margin-bottom:8px;">
+                <span class="info-label" style="font-weight:600;">${heading}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_company_name') || '🏢 Company Name:'}</span>
+                <span class="info-value">${info.companyName || notAvail}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_software_providers') || '🧩 Software providers using this accesspoint:'}</span>
+                <span class="info-value">${info.softwareProviders || (I18n?.t('unknown') || 'Unknown')}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_technical_contact') || '👨‍💼 Technical Contact:'}</span>
+                <span class="info-value">${info.technicalContact || notAvail}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_access_point') || '📡 Access Point:'}</span>
+                <span class="info-value">${info.accessPointName || notAvail}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_service_endpoint') || '🛰️ Service Endpoint:'}</span>
+                <span class="info-value url">${info.serviceEndpoint || notAvail}</span>
+            </div>
+            ${hideSmpHost ? '' : `
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_smp_host_uri') || '🔗 SMP Host URI:'}</span>
+                <span class="info-value url">${info.smpHostUri || notAvail}</span>
+            </div>`}
+            <div class="info-item">
+                <span class="info-label">${I18n?.t('label_network_status') || '✅ Peppol Network Status:'}</span>
+                <span class="info-value">${info.participantExists ? (I18n?.t('network_active') || 'Active participant') : (I18n?.t('network_not_found') || 'Not found in network')}</span>
+            </div>
         </div>
     `;
-    
+}
+
+// Display two company information panels side-by-side
+function displayCompanyInfoPair(info0208, info9925) {
+    const companyInfoDiv = document.getElementById('companyInfo');
+    const h0208 = `${I18n?.t('label_scheme') || 'Scheme'} 0208`;
+    const h9925 = `${I18n?.t('label_scheme') || 'Scheme'} 9925`;
+    companyInfoDiv.innerHTML = `
+        <div style="display:flex; gap:16px; align-items:stretch; flex-wrap:wrap;">
+            ${buildCompanyInfoHtml(info0208, h0208)}
+            ${buildCompanyInfoHtml(info9925, h9925)}
+        </div>
+    `;
     showSection('results');
-    LAST_COMPANY_INFO = info;
+    LAST_COMPANY_INFO = { info0208, info9925 };
+}
+
+// Helper to perform a single participant lookup using existing logic
+async function lookupByEncodedId(encodedParticipantId) {
+    // Make parallel API calls to get all required information
+    const [existenceData, businessCardData, smpData] = await Promise.allSettled([
+        fetchPeppolData(`/ppidexistence/${SML_ID}/${encodedParticipantId}`),
+        fetchPeppolData(`/businesscard/${SML_ID}/${encodedParticipantId}`),
+        fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}?businessCard=true`)
+    ]);
+    // Process results - some calls might fail, that's okay
+    const existence = existenceData.status === 'fulfilled' ? existenceData.value : null;
+    const businessCard = businessCardData.status === 'fulfilled' ? businessCardData.value : null;
+    const smp = smpData.status === 'fulfilled' ? smpData.value : null;
+
+    if (existence && !existence.exists) {
+        // Return a minimal object indicating non-existence
+        return extractCompanyInfo(null, null, existence);
+    }
+    if (!existence && !businessCard && !smp) {
+        return null;
+    }
+    const companyInfo = extractCompanyInfo(businessCard, smp, existence);
+
+    // Enrich with detailed SMP endpoint lookup to determine technical contact and access point when needed
+    try {
+        if (smp && smp.urls && smp.urls.length > 0) {
+            // Prefer the UBL Invoice doc type if present, otherwise use the first
+            let preferred = smp.urls.find(u => (u.documentTypeID || '').includes('Invoice-2')) || smp.urls[0];
+            const docTypeID = preferred.documentTypeID;
+            if (docTypeID) {
+                const detailed = await fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}/${encodeURIComponent(docTypeID)}`);
+                const processes = detailed && detailed.serviceinfo && detailed.serviceinfo.processes || [];
+                for (const proc of processes) {
+                    const endpoints = proc.endpoints || [];
+                    for (const ep of endpoints) {
+                        // Capture and normalize technical contact (strip mailto: if present)
+                        if (ep.technicalContactUrl && !companyInfo.technicalContact) {
+                            const rawContact = String(ep.technicalContactUrl);
+                            const normalizedContact = rawContact.toLowerCase().startsWith('mailto:') ? rawContact.slice(7) : rawContact;
+                            companyInfo.technicalContact = normalizedContact;
+                        }
+                        // Set AP directly from specific technical contact rules
+                        if (ep.technicalContactUrl) {
+                            const raw = String(ep.technicalContactUrl);
+                            const t = raw.toLowerCase().startsWith('mailto:') ? raw.slice(7).toLowerCase() : raw.toLowerCase();
+                            if (t === 'support@babelway.com') {
+                                companyInfo.accessPointName = 'Babelway';
+                                companyInfo.softwareProviders = 'Mercurius';
+                            }
+                            if (t === 'info@dokapi.io') {
+                                companyInfo.accessPointName = 'DokApi';
+                            }
+                            if (t === 'peppol@teamleader.eu') {
+                                companyInfo.accessPointName = 'Teamleader';
+                                companyInfo.softwareProviders = 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
+                            }
+                            if (t === 'support@e-invoice.be') {
+                                companyInfo.accessPointName = 'e-invoice';
+                                companyInfo.softwareProviders = 'e-invoice.be';
+                            }
+                            if (t === 'support@onfact.be') {
+                                companyInfo.accessPointName = 'Infinwebs BV';
+                                companyInfo.softwareProviders = 'OnFact';
+                            }
+                            if (t === 'peppol.support@odoo.com') {
+                                companyInfo.accessPointName = 'Odoo';
+                                companyInfo.softwareProviders = 'Odoo';
+                            }
+                        }
+                        // If technical contact is Codabox URL, set AP to Codabox
+                        if (ep.technicalContactUrl && String(ep.technicalContactUrl).toLowerCase() === 'https://codabox.com') {
+                            companyInfo.accessPointName = 'Codabox';
+                        }
+                        // Determine Access Point more accurately if not already a known name
+                        if (ep.endpointReference) {
+                            try {
+                                const url = new URL(ep.endpointReference);
+                                const host = url.hostname.toLowerCase();
+                                // Record service endpoint by default; may be overridden by special cases
+                                companyInfo.serviceEndpoint = ep.endpointReference;
+                                if (host.includes('tradeinterop')) {
+                                    companyInfo.accessPointName = 'Tradeinterop';
+                                } else if (host.includes('storecove')) {
+                                    companyInfo.accessPointName = 'Storecove';
+                                } else if (host.includes('hermes-belgium.be')) {
+                                    // Hermes endpoint implies AP Ixor Docs
+                                    companyInfo.accessPointName = 'Ixor Docs';
+                                    companyInfo.softwareProviders = 'Hermes';
+                                } else if (host.includes('tradeshift')) {
+                                    // For Belgian participants, denote Tradeshift Belgium
+                                    if (companyInfo.country === 'BE') {
+                                        companyInfo.accessPointName = 'Tradeshift Belgium';
+                                    } else {
+                                        companyInfo.accessPointName = 'Tradeshift';
+                                    }
+                                }
+                            } catch (_) { /* ignore */ }
+                        }
+                        // Explicit Hermes endpoint URL check
+                        if (ep.endpointReference === 'https://ap.hermes-belgium.be/as4') {
+                            companyInfo.accessPointName = 'Ixor Docs';
+                            companyInfo.softwareProviders = 'Hermes';
+                            companyInfo.serviceEndpoint = ep.endpointReference;
+                        }
+                        // If Teamleader contact, override service endpoint to Teamleader AS4
+                        if (companyInfo.accessPointName === 'Teamleader') {
+                            companyInfo.serviceEndpoint = 'https://peppol.teamleader.eu/as4';
+                        }
+                        // Also check certificate subject organization or service description for AP name
+                        const subj = ep.certificateDetails && ep.certificateDetails.subject && ep.certificateDetails.subject.O;
+                        if (subj && typeof subj === 'string') {
+                            const org = subj.toLowerCase();
+                            if (org.includes('tradeinterop')) companyInfo.accessPointName = 'Tradeinterop';
+                            if (org.includes('storecove')) companyInfo.accessPointName = 'Storecove';
+                        }
+                        if (ep.serviceDescription && /tradeinterop/i.test(ep.serviceDescription)) {
+                            companyInfo.accessPointName = 'Tradeinterop';
+                        }
+                    }
+                    // If we found either technical contact or AP name, we can stop early
+                    if (companyInfo.technicalContact || companyInfo.accessPointName) break;
+                }
+            }
+        }
+    } catch (e) {
+        // Ignore errors in technical contact enrichment, continue showing base info
+        console.warn('Technical contact enrichment failed:', e);
+    }
+
+    // Derive software providers mapping from technical contact if not set by special-case
+    if (!companyInfo.softwareProviders) {
+        companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
+    }
+    return companyInfo;
 }
 
 // Main lookup function
@@ -243,153 +401,33 @@ async function performLookup() {
     }
     
     try {
-        // Format and validate the input
-        const participantId = formatBelgianNumber(input);
-        const encodedParticipantId = encodeParticipantId(participantId);
+        // Format and validate the input for both schemes
+        const participantId0208 = formatBelgianNumber(input);
+        const participantId9925 = formatBelgianNumber9925(input);
+        const encoded0208 = encodeParticipantId(participantId0208);
+        const encoded9925 = encodeParticipantId(participantId9925);
         
         setButtonLoading(true);
         showSection('loading');
         
-        // Make parallel API calls to get all required information
-        const [existenceData, businessCardData, smpData] = await Promise.allSettled([
-            fetchPeppolData(`/ppidexistence/${SML_ID}/${encodedParticipantId}`),
-            fetchPeppolData(`/businesscard/${SML_ID}/${encodedParticipantId}`),
-            fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}?businessCard=true`)
+        // Perform both lookups in parallel
+        const [info0208, info9925] = await Promise.all([
+            lookupByEncodedId(encoded0208),
+            lookupByEncodedId(encoded9925)
         ]);
-        
-        // Process results - some calls might fail, that's okay
-        const existence = existenceData.status === 'fulfilled' ? existenceData.value : null;
-        const businessCard = businessCardData.status === 'fulfilled' ? businessCardData.value : null;
-        const smp = smpData.status === 'fulfilled' ? smpData.value : null;
-        
-        // Check if participant exists at all
-        if (existence && !existence.exists) {
-            showError(I18n?.t('error_not_registered') || 'This company is not registered in the Peppol network.');
-            return;
-        }
-        
-        // If no data was retrieved successfully, show error
-        if (!existence && !businessCard && !smp) {
+
+        if (!info0208 && !info9925) {
             showError(I18n?.t('error_unable_retrieve') || 'Unable to retrieve company information. The company may not be registered in the Peppol network or the service is temporarily unavailable.');
             return;
         }
-        // Extract base company information
-        const companyInfo = extractCompanyInfo(businessCard, smp, existence);
 
-        // Enrich with detailed SMP endpoint lookup to determine technical contact and access point when needed
-        try {
-            if (smp && smp.urls && smp.urls.length > 0) {
-                // Prefer the UBL Invoice doc type if present, otherwise use the first
-                let preferred = smp.urls.find(u => (u.documentTypeID || '').includes('Invoice-2')) || smp.urls[0];
-                const docTypeID = preferred.documentTypeID;
-                if (docTypeID) {
-                    const detailed = await fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}/${encodeURIComponent(docTypeID)}`);
-                    const processes = detailed && detailed.serviceinfo && detailed.serviceinfo.processes || [];
-                    for (const proc of processes) {
-                        const endpoints = proc.endpoints || [];
-                        for (const ep of endpoints) {
-                            // Capture and normalize technical contact (strip mailto: if present)
-                            if (ep.technicalContactUrl && !companyInfo.technicalContact) {
-                                const rawContact = String(ep.technicalContactUrl);
-                                const normalizedContact = rawContact.toLowerCase().startsWith('mailto:') ? rawContact.slice(7) : rawContact;
-                                companyInfo.technicalContact = normalizedContact;
-                            }
-                            // Set AP directly from specific technical contact rules
-                            if (ep.technicalContactUrl) {
-                                const raw = String(ep.technicalContactUrl);
-                                const t = raw.toLowerCase().startsWith('mailto:') ? raw.slice(7).toLowerCase() : raw.toLowerCase();
-                                if (t === 'support@babelway.com') {
-                                    companyInfo.accessPointName = 'Babelway';
-                                    companyInfo.softwareProviders = 'Mercurius';
-                                }
-                                if (t === 'info@dokapi.io') {
-                                    companyInfo.accessPointName = 'DokApi';
-                                }
-                                if (t === 'peppol@teamleader.eu') {
-                                    companyInfo.accessPointName = 'Teamleader';
-                                    companyInfo.softwareProviders = 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
-                                }
-                                if (t === 'support@e-invoice.be') {
-                                    companyInfo.accessPointName = 'e-invoice';
-                                    companyInfo.softwareProviders = 'e-invoice.be';
-                                }
-                                if (t === 'support@onfact.be') {
-                                    companyInfo.accessPointName = 'Infinwebs BV';
-                                    companyInfo.softwareProviders = 'OnFact';
-                                }
-                                if (t === 'peppol.support@odoo.com') {
-                                    companyInfo.accessPointName = 'Odoo';
-                                    companyInfo.softwareProviders = 'Odoo';
-                                }
-                            }
-                            // If technical contact is Codabox URL, set AP to Codabox
-                            if (ep.technicalContactUrl && String(ep.technicalContactUrl).toLowerCase() === 'https://codabox.com') {
-                                companyInfo.accessPointName = 'Codabox';
-                            }
-                            // Determine Access Point more accurately if not already a known name
-                            if (ep.endpointReference) {
-                                try {
-                                    const url = new URL(ep.endpointReference);
-                                    const host = url.hostname.toLowerCase();
-                                    // Record service endpoint by default; may be overridden by special cases
-                                    companyInfo.serviceEndpoint = ep.endpointReference;
-                                    if (host.includes('tradeinterop')) {
-                                        companyInfo.accessPointName = 'Tradeinterop';
-                                    } else if (host.includes('storecove')) {
-                                        companyInfo.accessPointName = 'Storecove';
-                                    } else if (host.includes('hermes-belgium.be')) {
-                                        // Hermes endpoint implies AP Ixor Docs
-                                        companyInfo.accessPointName = 'Ixor Docs';
-                                        companyInfo.softwareProviders = 'Hermes';
-                                    } else if (host.includes('tradeshift')) {
-                                        // For Belgian participants, denote Tradeshift Belgium
-                                        if (companyInfo.country === 'BE') {
-                                            companyInfo.accessPointName = 'Tradeshift Belgium';
-                                        } else {
-                                            companyInfo.accessPointName = 'Tradeshift';
-                                        }
-                                    }
-                                } catch (_) { /* ignore */ }
-                            }
-                            // Explicit Hermes endpoint URL check
-                            if (ep.endpointReference === 'https://ap.hermes-belgium.be/as4') {
-                                companyInfo.accessPointName = 'Ixor Docs';
-                                companyInfo.softwareProviders = 'Hermes';
-                                companyInfo.serviceEndpoint = ep.endpointReference;
-                            }
-                            // If Teamleader contact, override service endpoint to Teamleader AS4
-                            if (companyInfo.accessPointName === 'Teamleader') {
-                                companyInfo.serviceEndpoint = 'https://peppol.teamleader.eu/as4';
-                            }
-                            // Also check certificate subject organization or service description for AP name
-                            const subj = ep.certificateDetails && ep.certificateDetails.subject && ep.certificateDetails.subject.O;
-                            if (subj && typeof subj === 'string') {
-                                const org = subj.toLowerCase();
-                                if (org.includes('tradeinterop')) companyInfo.accessPointName = 'Tradeinterop';
-                                if (org.includes('storecove')) companyInfo.accessPointName = 'Storecove';
-                            }
-                            if (ep.serviceDescription && /tradeinterop/i.test(ep.serviceDescription)) {
-                                companyInfo.accessPointName = 'Tradeinterop';
-                            }
-                        }
-                        // If we found either technical contact or AP name, we can stop early
-                        if (companyInfo.technicalContact || companyInfo.accessPointName) break;
-                    }
-                }
-            }
-        } catch (e) {
-            // Ignore errors in technical contact enrichment, continue showing base info
-            console.warn('Technical contact enrichment failed:', e);
-        }
+        // If one of them is null, create a placeholder with non-existence
+        const notFound = { companyName: null, technicalContact: null, country: null, additionalInfo: null, smpHostUri: null, participantExists: false, accessPointName: null, serviceEndpoint: null };
+        const final0208 = info0208 || notFound;
+        const final9925 = info9925 || notFound;
 
-        // Derive software providers mapping from technical contact
-        // Only set via mapping if not determined by special-case (e.g., Hermes)
-        if (!companyInfo.softwareProviders) {
-            companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
-        }
-
-        // Display company information
-        displayCompanyInfo(companyInfo);
+        // Display both side-by-side
+        displayCompanyInfoPair(final0208, final9925);
         
     } catch (error) {
         console.error('Lookup error:', error);
@@ -417,7 +455,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Re-render results on language changes
     document.addEventListener('i18n:applied', () => {
         if (LAST_COMPANY_INFO) {
-            displayCompanyInfo(LAST_COMPANY_INFO);
+            if (LAST_COMPANY_INFO.info0208 && LAST_COMPANY_INFO.info9925) {
+                displayCompanyInfoPair(LAST_COMPANY_INFO.info0208, LAST_COMPANY_INFO.info9925);
+            }
         }
     });
 });
