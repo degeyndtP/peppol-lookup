@@ -47,5 +47,8 @@
   "both_not_found_title": "Non enregistré sur le réseau Peppol",
   "both_not_found_paragraph": "Vous n’êtes actuellement pas enregistré sur le réseau Peppol et ne pouvez pas recevoir de factures.",
   "both_not_found_actions_title": "Que voulez-vous faire ?",
-  "both_not_found_secondary": "En savoir plus sur Peppol ?"
+  "both_not_found_secondary": "En savoir plus sur Peppol ?",
+  "hermes_warn_title": "Votre connexion Peppol actuelle s’arrêtera le 31/12/2025",
+  "hermes_warn_subtitle": "Vous utilisez la plateforme gouvernementale Hermes pour recevoir des factures via Peppol. Cela cessera de fonctionner le 31/12/2025",
+  "hermes_warn_cta": "Activer Peppol avec Teamleader"
 }
