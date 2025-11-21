@@ -6,6 +6,8 @@
   "input_subtitle": "Find out where you are registered by entering your VAT or CBE number",
   "input_placeholder_formats": "BE0123456789 or 0123456789",
   "lookup_button": "Lookup",
+  "result_title_0208": "Result for Belgium CBE number",
+  "result_title_9925": "Result for Belgium VAT number",
   "supported_formats_title": "Supported formats:",
   "supported_format_vat": "Belgian VAT: BE0123456789",
   "supported_format_ent": "Belgian Entrepreneur Number: 0123456789",
@@ -41,13 +43,9 @@
   "msg_not_on_peppol": "You are not on Peppol",
   "cta_start_peppol": "Start with Peppol",
   "msg_0208_missing": "Entrepreneursnumber is not registered on Peppol",
-  "msg_9925_missing": "VAT is not registered on Peppol"
-  ,
+  "msg_9925_missing": "VAT is not registered on Peppol",
   "both_not_found_title": "Not registered on the Peppol-network",
   "both_not_found_paragraph": "You currently are not registered on the Peppol-network and can't receive invoices.",
   "both_not_found_actions_title": "What do you want to do?",
   "both_not_found_secondary": "Know more about Peppol?"
-  ,
-  "result_title_0208": "Result for Belgium entrepreneur number",
-  "result_title_9925": "Result for Belgium VAT number"
 }

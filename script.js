@@ -241,8 +241,8 @@ function displayCompanyInfoPair(info0208, info9925) {
             results.style.maxWidth = '100%';
         }
     } catch(_) { /* ignore */ }
-    const h0208 = 'Result for Belgium entrepreneur number';
-    const h9925 = 'Result for Belgium VAT number';
+    const h0208 = I18n?.t('result_title_0208') || 'Result for Belgium CBE number';
+    const h9925 = I18n?.t('result_title_9925') || 'Result for Belgium VAT number';
     const exists0208 = !!info0208 && (info0208.participantExists !== false);
     const exists9925 = !!info9925 && (info9925.participantExists !== false);
 
@@ -285,16 +285,9 @@ function displayCompanyInfoPair(info0208, info9925) {
         return;
     }
 
-    // Build layout with optional banners and available panels
+    // Build layout panels first, then show a single banner below if one scheme is missing
     const parts = [];
-    // Show scheme-specific missing messages
-    if (!exists0208 && exists9925) {
-        parts.push(banner(I18n?.t('msg_0208_missing') || '0208 is not registered on Peppol'));
-    }
-    if (!exists9925 && exists0208) {
-        parts.push(banner(I18n?.t('msg_9925_missing') || '9925 is not registered on Peppol'));
-    }
-
+    let bottomBanner = '';
     // Decide panel rendering
     if (exists0208 && exists9925) {
         const sameAP = (
@@ -321,15 +314,17 @@ function displayCompanyInfoPair(info0208, info9925) {
                 ${buildCompanyInfoHtml(info0208, h0208)}
             </div>
         `);
+        bottomBanner = banner(I18n?.t('msg_9925_missing') || '9925 is not registered on Peppol');
     } else if (exists9925) {
         parts.push(`
             <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
                 ${buildCompanyInfoHtml(info9925, h9925)}
             </div>
         `);
+        bottomBanner = banner(I18n?.t('msg_0208_missing') || '0208 is not registered on Peppol');
     }
 
-    companyInfoDiv.innerHTML = parts.join('\n');
+    companyInfoDiv.innerHTML = parts.join('\n') + (bottomBanner ? `\n<div style="margin-top:12px;">${bottomBanner}</div>` : '');
     showSection('results');
     LAST_COMPANY_INFO = { info0208, info9925 };
 }

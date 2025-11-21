@@ -6,6 +6,8 @@
   "input_subtitle": "Ontdek waar je geregistreerd bent door je btw- of KBO-nummer in te vullen",
   "input_placeholder_formats": "BE0123456789 of 0123456789",
   "lookup_button": "Zoeken",
+  "result_title_0208": "Resultaat voor Belgisch KBO-nummer",
+  "result_title_9925": "Resultaat voor Belgisch btw-nummer",
   "supported_formats_title": "Ondersteunde formaten:",
   "supported_format_vat": "Belgisch btw-nummer: BE0123456789",
   "supported_format_ent": "Belgisch ondernemingsnummer: 0123456789",

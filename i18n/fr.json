@@ -6,6 +6,8 @@
   "input_subtitle": "Découvrez où vous êtes enregistré en saisissant votre numéro de TVA ou BCE",
   "input_placeholder_formats": "BE0123456789 ou 0123456789",
   "lookup_button": "Rechercher",
+  "result_title_0208": "Résultat pour le numéro BCE belge",
+  "result_title_9925": "Résultat pour le numéro de TVA belge",
   "supported_formats_title": "Formats pris en charge :",
   "supported_format_vat": "TVA belge : BE0123456789",
   "supported_format_ent": "Numéro d’entreprise belge : 0123456789",
