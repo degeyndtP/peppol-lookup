@@ -303,7 +303,8 @@ main {
 .form-desc {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
 }
 
 .form-title {
@@ -312,6 +313,7 @@ main {
     font-size: 18px;
     line-height: 24px;
     color: #000000;
+    text-align: center;
 }
 
 .form-example {
@@ -321,6 +323,7 @@ main {
     font-size: 14px;
     line-height: 18px;
     color: #647990; /* Teal/300-Normal (approx) */
+    text-align: center;
 }
 
 .form-row {
