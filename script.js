@@ -482,6 +482,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Prefill from URL path and auto-run lookup (e.g., /1018174653 or /BE0123456789)
+    try {
+        const path = (window.location && window.location.pathname) ? window.location.pathname : '';
+        // Extract first non-empty segment
+        const slug = path.replace(/^\/+/, '').split(/[\/\?#]/)[0];
+        if (slug) {
+            // Accept digits or BE-prefixed digits
+            const normalized = decodeURIComponent(slug).toUpperCase();
+            if (/^(BE)?\d{10}$/.test(normalized)) {
+                const inputEl = document.getElementById('companyNumber');
+                if (inputEl) {
+                    inputEl.value = normalized;
+                    // Auto-trigger lookup
+                    performLookup();
+                }
+            }
+        }
+    } catch (_) { /* ignore */ }
 });
 
 // Make performLookup available globally
