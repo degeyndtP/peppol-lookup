@@ -288,7 +288,7 @@ function displayCompanyInfoPair(info0208, info9925) {
                     <div class="heading3">${I18n?.t('both_not_found_actions_title') || 'What would you like to do?'}</div>
                     <div class="btn-row">
                         <a class="btn-primary" href="${url}" target="_blank" rel="noopener">${I18n?.t('cta_start_peppol') || 'Start with Peppol'}</a>
-                        <button class="btn-secondary" type="button" onclick="(function(){ const el=document.getElementById('companyNumber'); if(el){ el.focus(); el.select && el.select(); } })()">${I18n?.t('both_not_found_secondary') || 'Try another number'}</button>
+                        <a class="btn-secondary" href="https://www.teamleader.eu/nl-be/blog/teamleader-focus-peppol-partner" target="_blank" rel="noopener">${I18n?.t('both_not_found_secondary') || 'Know more about Peppol?'}</a>
                     </div>
                 </div>
             </div>
