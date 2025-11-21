@@ -274,10 +274,10 @@ function displayCompanyInfoPair(info0208, info9925) {
         companyInfoDiv.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start; width:100%;">
                 <div style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:14px 16px; border-radius:10px; font-weight:600;">
-                    You are not on Peppol
+                    ${I18n?.t('msg_not_on_peppol') || 'You are not on Peppol'}
                 </div>
                 <a href="${url}" target="_blank" rel="noopener" style="display:inline-block; background:#2563eb; color:#fff; padding:10px 14px; border-radius:8px; text-decoration:none; font-weight:600;">
-                    Start with Peppol
+                    ${I18n?.t('cta_start_peppol') || 'Start with Peppol'}
                 </a>
             </div>
         `;
@@ -290,10 +290,10 @@ function displayCompanyInfoPair(info0208, info9925) {
     const parts = [];
     // Show scheme-specific missing messages
     if (!exists0208 && exists9925) {
-        parts.push(banner('0208 is not registered on Peppol'));
+        parts.push(banner(I18n?.t('msg_0208_missing') || '0208 is not registered on Peppol'));
     }
     if (!exists9925 && exists0208) {
-        parts.push(banner('9925 is not registered on Peppol'));
+        parts.push(banner(I18n?.t('msg_9925_missing') || '9925 is not registered on Peppol'));
     }
 
     // Decide panel rendering

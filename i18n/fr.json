@@ -35,5 +35,10 @@
   "label_smp_host_uri": "🔗 SMP Host URI :",
   "label_network_status": "✅ Statut sur le réseau Peppol :",
   "network_active": "Participant actif",
-  "network_not_found": "Non trouvé dans le réseau"
+  "network_not_found": "Non trouvé dans le réseau",
+
+  "msg_not_on_peppol": "Vous n’êtes pas sur Peppol",
+  "cta_start_peppol": "Commencer avec Peppol",
+  "msg_0208_missing": "0208 n’est pas enregistré sur Peppol",
+  "msg_9925_missing": "9925 n’est pas enregistré sur Peppol"
 }
