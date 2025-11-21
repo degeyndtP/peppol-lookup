@@ -204,9 +204,9 @@ function buildCompanyInfoHtml(info, heading) {
     const hideSmpHost = (info.technicalContact || '').toString().toLowerCase() === 'peppol@teamleader.eu';
     const notAvail = I18n?.t('not_available') || 'Not available';
     return `
-        <div style="flex:1; min-width:280px; padding:12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff;">
-            <div class="info-item" style="margin-bottom:8px;">
-                <span class="info-label" style="font-weight:600;">${heading}</span>
+        <div role="group" aria-label="${heading}" style="flex:1; min-width:320px; padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;">
+            <div class="panel-title" style="font-weight:700; font-size:18px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">
+                ${heading}
             </div>
             <div class="info-item">
                 <span class="info-label">${I18n?.t('label_company_name') || '🏢 Company Name:'}</span>
@@ -255,7 +255,7 @@ function displayCompanyInfoPair(info0208, info9925) {
         }
     } catch(_) { /* ignore */ }
     const h0208 = 'Result for Belgium entrepreneur number';
-    const h9925 = 'Result for Belgium entrepreneur number';
+    const h9925 = 'Result for Belgium VAT number';
     companyInfoDiv.innerHTML = `
         <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
             ${buildCompanyInfoHtml(info0208, h0208)}
