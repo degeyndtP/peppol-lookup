@@ -256,24 +256,81 @@ function displayCompanyInfoPair(info0208, info9925) {
     } catch(_) { /* ignore */ }
     const h0208 = 'Result for Belgium entrepreneur number';
     const h9925 = 'Result for Belgium VAT number';
-    const sameAP = (
-        info0208?.accessPointName && info9925?.accessPointName &&
-        String(info0208.accessPointName).toLowerCase() === String(info9925.accessPointName).toLowerCase()
-    );
-    if (sameAP) {
+    const exists0208 = !!info0208 && (info0208.participantExists !== false);
+    const exists9925 = !!info9925 && (info9925.participantExists !== false);
+
+    // Helper: build missing banner HTML
+    const banner = (text) => `
+        <div style="background:#fff7ed; color:#9a3412; border:1px solid #fdba74; padding:10px 12px; border-radius:8px; margin-bottom:12px;">
+            ${text}
+        </div>`;
+
+    // If both missing -> show CTA only
+    if (!exists0208 && !exists9925) {
+        const lang = (window.I18n?.current || 'en');
+        const allowed = ['en','nl','fr'];
+        const l = allowed.includes(lang) ? lang : 'en';
+        const url = `https://signup.teamleader.eu/?country=BE&lang=${l}`;
         companyInfoDiv.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start; width:100%;">
+                <div style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:14px 16px; border-radius:10px; font-weight:600;">
+                    You are not on Peppol
+                </div>
+                <a href="${url}" target="_blank" rel="noopener" style="display:inline-block; background:#2563eb; color:#fff; padding:10px 14px; border-radius:8px; text-decoration:none; font-weight:600;">
+                    Start with Peppol
+                </a>
+            </div>
+        `;
+        showSection('results');
+        LAST_COMPANY_INFO = { info0208, info9925 };
+        return;
+    }
+
+    // Build layout with optional banners and available panels
+    const parts = [];
+    // Show scheme-specific missing messages
+    if (!exists0208 && exists9925) {
+        parts.push(banner('0208 is not registered on Peppol'));
+    }
+    if (!exists9925 && exists0208) {
+        parts.push(banner('9925 is not registered on Peppol'));
+    }
+
+    // Decide panel rendering
+    if (exists0208 && exists9925) {
+        const sameAP = (
+            info0208?.accessPointName && info9925?.accessPointName &&
+            String(info0208.accessPointName).toLowerCase() === String(info9925.accessPointName).toLowerCase()
+        );
+        if (sameAP) {
+            parts.push(`
+                <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
+                    ${buildCompanyInfoHtml(info0208, h0208)}
+                </div>
+            `);
+        } else {
+            parts.push(`
+                <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
+                    ${buildCompanyInfoHtml(info0208, h0208)}
+                    ${buildCompanyInfoHtml(info9925, h9925)}
+                </div>
+            `);
+        }
+    } else if (exists0208) {
+        parts.push(`
             <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
                 ${buildCompanyInfoHtml(info0208, h0208)}
             </div>
-        `;
-    } else {
-        companyInfoDiv.innerHTML = `
-            <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%; justify-content:space-between;">
-                ${buildCompanyInfoHtml(info0208, h0208)}
+        `);
+    } else if (exists9925) {
+        parts.push(`
+            <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
                 ${buildCompanyInfoHtml(info9925, h9925)}
             </div>
-        `;
+        `);
     }
+
+    companyInfoDiv.innerHTML = parts.join('\n');
     showSection('results');
     LAST_COMPANY_INFO = { info0208, info9925 };
 }
@@ -438,18 +495,8 @@ async function performLookup() {
             lookupByEncodedId(encoded9925)
         ]);
 
-        if (!info0208 && !info9925) {
-            showError(I18n?.t('error_unable_retrieve') || 'Unable to retrieve company information. The company may not be registered in the Peppol network or the service is temporarily unavailable.');
-            return;
-        }
-
-        // If one of them is null, create a placeholder with non-existence
-        const notFound = { companyName: null, technicalContact: null, country: null, additionalInfo: null, smpHostUri: null, participantExists: false, accessPointName: null, serviceEndpoint: null };
-        const final0208 = info0208 || notFound;
-        const final9925 = info9925 || notFound;
-
-        // Display both side-by-side
-        displayCompanyInfoPair(final0208, final9925);
+        // Pass through raw results (may be null) so renderer can decide messaging/UI
+        displayCompanyInfoPair(info0208, info9925);
         
     } catch (error) {
         console.error('Lookup error:', error);
