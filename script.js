@@ -630,33 +630,64 @@ async function performLookup() {
             lookupByEncodedId(encoded9925)
         ]);
 
-        // Cross-scheme enrichment: copy missing fields in BOTH directions when the other has them
+        // Cross-scheme enrichment: ensure consistent mapping between 0208 and 9925 lookups
         try {
-            if (info0208 && info9925) {
-                const fields = ['companyName','country','technicalContact','accessPointName','softwareProviders'];
-                for (const f of fields) {
-                    if (!info0208[f] && info9925[f]) info0208[f] = info9925[f];
-                    if (!info9925[f] && info0208[f]) info9925[f] = info0208[f];
-                }
-            }
-            // Normalize AP name from SMP Host if still missing, and derive providers consistently for each result
+            // First normalize both lookups
             const normalize = (info) => {
                 if (!info) return info;
+                
+                // Get access point name from SMP host URI if not already set
                 if (!info.accessPointName && info.smpHostUri) {
                     info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
                 }
+                
                 // Country-specific tweak for Tradeshift generic host
-                if (info && info.accessPointName === 'Tradeshift' && info.country === 'BE') {
+                if (info.accessPointName === 'Tradeshift' && info.country === 'BE') {
                     info.accessPointName = 'Tradeshift Belgium';
                 }
-                if (!info.softwareProviders) {
-                    info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
-                }
+                
+                // Always re-map software providers to ensure consistency
+                info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                
                 return info;
             };
+            
+            // Normalize both lookups
             info0208 = normalize(info0208);
             info9925 = normalize(info9925);
-        } catch (_) { /* ignore */ }
+            
+            // If both lookups exist, ensure they share the same mapping
+            if (info0208 && info9925) {
+                // Determine which lookup has better information
+                const sourceInfo = info9925.technicalContact || info9925.accessPointName ? info9925 : 
+                                 info0208.technicalContact || info0208.accessPointName ? info0208 : null;
+                
+                if (sourceInfo) {
+                    // Copy mapping information to both lookups
+                    const targetFields = ['technicalContact', 'accessPointName', 'softwareProviders'];
+                    [info0208, info9925].forEach(target => {
+                        if (target) {
+                            targetFields.forEach(field => {
+                                if (sourceInfo[field] && !target[field]) {
+                                    target[field] = sourceInfo[field];
+                                }
+                            });
+                            
+                            // Ensure software providers are consistent
+                            if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
+                                target.softwareProviders = mapSoftwareProviders(
+                                    target.technicalContact || sourceInfo.technicalContact,
+                                    target.accessPointName || sourceInfo.accessPointName
+                                );
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Error during cross-scheme enrichment:', e);
+            // Continue with the data we have
+        }
 
         // Pass through raw results (may be null) so renderer can decide messaging/UI
         displayCompanyInfoPair(info0208, info9925);
