@@ -14,16 +14,30 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         const url = new URL(smpHostUri);
         const host = url.hostname;
         // Known mappings (extend over time)
-        if (host.includes('storecove')) return 'Storecove';
-        if (host === 'smp.peppol.comax.be' || host.includes('comax.be')) return 'Comax';
+        if (/storecove/i.test(host)) return 'Storecove';
+        if (host === 'smp.peppol.comax.be' || /comax\.be/i.test(host)) return 'Comax';
+        if (/tradeinterop/i.test(host)) return 'Tradeinterop';
+        if (/hermes-belgium\.be/i.test(host)) return 'Ixor Docs';
+        if (/tradeshift/i.test(host)) return 'Tradeshift Belgium';
+        if (/dokapi/i.test(host)) return 'DokApi';
+        if (/e-invoice\.be/i.test(host)) return 'e-invoice';
+        if (/onfact\.be/i.test(host)) return 'Infinwebs BV';
+        if (/odoo/i.test(host)) return 'Odoo';
         // Default to prettified hostname
         return host.replace(/^www\./, '');
     } catch (_) {
         // Fallback if not a valid URL
         const match = (smpHostUri.match(/https?:\/\/([^\/]*)/) || [])[1];
         if (match) {
-            if (match.includes('storecove')) return 'Storecove';
-            if (match === 'smp.peppol.comax.be' || match.includes('comax.be')) return 'Comax';
+            if (/storecove/i.test(match)) return 'Storecove';
+            if (match === 'smp.peppol.comax.be' || /comax\.be/i.test(match)) return 'Comax';
+            if (/tradeinterop/i.test(match)) return 'Tradeinterop';
+            if (/hermes-belgium\.be/i.test(match)) return 'Ixor Docs';
+            if (/tradeshift/i.test(match)) return 'Tradeshift Belgium';
+            if (/dokapi/i.test(match)) return 'DokApi';
+            if (/e-invoice\.be/i.test(match)) return 'e-invoice';
+            if (/onfact\.be/i.test(match)) return 'Infinwebs BV';
+            if (/odoo/i.test(match)) return 'Odoo';
             return match.replace(/^www\./, '');
         }
         return smpHostUri;
@@ -49,7 +63,8 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'peppol.support@odoo.com') return 'Odoo';
     // AP-name-specific mapping
     if (ap === 'Tradeshift Belgium') return 'Mercurius';
-    return I18n?.t('unknown') || 'Unknown';
+    // Fallback to AP name if we don't have a richer mapping, so it's not unknown
+    return ap || (I18n?.t('unknown') || 'Unknown');
 }
 
 // Belgian VAT number validation and formatting
