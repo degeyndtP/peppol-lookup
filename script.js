@@ -449,28 +449,71 @@ async function lookupByEncodedId(encodedParticipantId) {
                         if (ep.technicalContactUrl) {
                             const raw = String(ep.technicalContactUrl);
                             const t = raw.toLowerCase().startsWith('mailto:') ? raw.slice(7).toLowerCase() : raw.toLowerCase();
-                            if (t === 'support@babelway.com') {
-                                companyInfo.accessPointName = 'Babelway';
-                                companyInfo.softwareProviders = 'Mercurius';
-                            }
-                            if (t === 'info@dokapi.io') {
-                                companyInfo.accessPointName = 'DokApi';
-                            }
-                            if (t === 'peppol@teamleader.eu') {
-                                companyInfo.accessPointName = 'Teamleader';
-                                companyInfo.softwareProviders = 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
-                            }
-                            if (t === 'support@e-invoice.be') {
-                                companyInfo.accessPointName = 'e-invoice';
-                                companyInfo.softwareProviders = 'e-invoice.be';
-                            }
-                            if (t === 'support@onfact.be') {
-                                companyInfo.accessPointName = 'Infinwebs BV';
-                                companyInfo.softwareProviders = 'OnFact';
-                            }
-                            if (t === 'peppol.support@odoo.com') {
-                                companyInfo.accessPointName = 'Odoo';
-                                companyInfo.softwareProviders = 'Odoo';
+                            
+                            // Map technical contacts to their corresponding access points and software providers
+                            const contactMappings = [
+                                { 
+                                    contact: 'support@babelway.com', 
+                                    accessPoint: 'Babelway', 
+                                    software: 'Mercurius' 
+                                },
+                                { 
+                                    contact: 'info@dokapi.io', 
+                                    accessPoint: 'DokApi',
+                                    software: 'Dokapi (previously: Ixor Docs)'
+                                },
+                                { 
+                                    contact: 'peppol@teamleader.eu', 
+                                    accessPoint: 'Teamleader',
+                                    software: 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit'
+                                },
+                                { 
+                                    contact: 'support@e-invoice.be', 
+                                    accessPoint: 'e-invoice',
+                                    software: 'e-invoice.be'
+                                },
+                                { 
+                                    contact: 'support@onfact.be', 
+                                    accessPoint: 'Infinwebs BV',
+                                    software: 'OnFact'
+                                },
+                                { 
+                                    contact: 'peppol.support@odoo.com', 
+                                    accessPoint: 'Odoo',
+                                    software: 'Odoo'
+                                },
+                                { 
+                                    contact: 'support@okioki.be', 
+                                    accessPoint: 'OkiOki',
+                                    software: 'OkiOki'
+                                },
+                                { 
+                                    contact: 'support@billit.com', 
+                                    accessPoint: 'Billit',
+                                    software: 'Billit'
+                                },
+                                { 
+                                    contact: 'openpeppol@exact.com', 
+                                    accessPoint: 'Exact',
+                                    software: 'Exact Online'
+                                },
+                                { 
+                                    contact: 'peppol@storecove.com', 
+                                    accessPoint: 'Storecove',
+                                    software: 'Accountable, Lucy or Yuki'
+                                },
+                                { 
+                                    contact: 'https://codabox.com', 
+                                    accessPoint: 'Codabox',
+                                    software: 'Doccle, Clearfacts or Eenvoudigfactureren.be'
+                                }
+                            ];
+
+                            // Find matching contact mapping
+                            const mapping = contactMappings.find(m => m.contact.toLowerCase() === t);
+                            if (mapping) {
+                                companyInfo.accessPointName = mapping.accessPoint;
+                                companyInfo.softwareProviders = mapping.software;
                             }
                         }
                         // If technical contact is Codabox URL, set AP to Codabox
@@ -533,7 +576,29 @@ async function lookupByEncodedId(encodedParticipantId) {
         console.warn('Technical contact enrichment failed:', e);
     }
 
-    // Derive software providers mapping from technical contact if not set by special-case
+    // Ensure we have the most accurate software providers and access point names
+    if (companyInfo.accessPointName) {
+        // If we have an access point but no software providers, try to map it
+        if (!companyInfo.softwareProviders) {
+            companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
+        }
+    } else if (companyInfo.technicalContact) {
+        // If we have a technical contact but no access point, try to derive it
+        const mapped = mapSoftwareProviders(companyInfo.technicalContact, '');
+        if (mapped && mapped !== 'Unknown') {
+            companyInfo.softwareProviders = mapped;
+            // For some providers, we can infer the access point from the software
+            if (mapped === 'Mercurius') {
+                companyInfo.accessPointName = 'Babelway';
+            } else if (mapped.includes('Teamleader')) {
+                companyInfo.accessPointName = 'Teamleader';
+            } else if (mapped.includes('Odoo')) {
+                companyInfo.accessPointName = 'Odoo';
+            }
+        }
+    }
+    
+    // Final fallback to mapping function if we still don't have software providers
     if (!companyInfo.softwareProviders) {
         companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
     }
