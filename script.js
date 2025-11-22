@@ -555,6 +555,23 @@ async function performLookup() {
                     if (!info0208[f] && info9925[f]) info0208[f] = info9925[f];
                     if (!info9925[f] && info0208[f]) info9925[f] = info0208[f];
                 }
+                // Normalize AP name from SMP Host if still missing, and derive providers consistently
+                const normalize = (info) => {
+                    if (!info) return info;
+                    if (!info.accessPointName && info.smpHostUri) {
+                        info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
+                    }
+                    // Country-specific tweak for Tradeshift generic host
+                    if (info.accessPointName === 'Tradeshift' && info.country === 'BE') {
+                        info.accessPointName = 'Tradeshift Belgium';
+                    }
+                    if (!info.softwareProviders) {
+                        info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                    }
+                    return info;
+                };
+                info0208 = normalize(info0208);
+                info9925 = normalize(info9925);
             }
         } catch (_) { /* ignore */ }
 
