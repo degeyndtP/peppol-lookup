@@ -42,7 +42,7 @@
 
   "msg_not_on_peppol": "You are not on Peppol",
   "cta_start_peppol": "Start with Peppol",
-  "msg_0208_missing": "Entrepreneursnumber is not registered on Peppol",
+  "msg_0208_missing": "CBE number is not registered on Peppol",
   "msg_9925_missing": "VAT is not registered on Peppol",
   "both_not_found_title": "Not registered on the Peppol-network",
   "both_not_found_paragraph": "You currently are not registered on the Peppol-network and can't receive invoices.",

@@ -219,6 +219,10 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
             info.technicalContact = info.technicalContact || contact.name || contact.email || null;
         }
     }
+    // If we have any business card data (primary or via SMP), and existence wasn't explicitly false, set exists
+    if ((businessCardData || (smpData && smpData.businesscard)) && (existenceData == null || typeof existenceData.exists === 'undefined')) {
+        info.participantExists = true;
+    }
     
     return info;
 }

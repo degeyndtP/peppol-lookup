@@ -42,7 +42,7 @@
 
   "msg_not_on_peppol": "Vous n’êtes pas sur Peppol",
   "cta_start_peppol": "Commencer avec Peppol",
-  "msg_0208_missing": "Le numéro d’entreprise n’est pas enregistré sur Peppol",
+  "msg_0208_missing": "Le numéro BCE n’est pas enregistré sur Peppol",
   "msg_9925_missing": "Le numéro de TVA n’est pas enregistré sur Peppol",
   "both_not_found_title": "Non enregistré sur le réseau Peppol",
   "both_not_found_paragraph": "Vous n’êtes actuellement pas enregistré sur le réseau Peppol et ne pouvez pas recevoir de factures.",

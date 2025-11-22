@@ -42,7 +42,7 @@
 
   "msg_not_on_peppol": "Je bent niet aangesloten op Peppol",
   "cta_start_peppol": "Start met Peppol",
-  "msg_0208_missing": "Ondernemingsnummer is niet geregistreerd op Peppol",
+  "msg_0208_missing": "KBO-nummer is niet geregistreerd op Peppol",
   "msg_9925_missing": "Btw-nummer is niet geregistreerd op Peppol",
   "both_not_found_title": "Niet geregistreerd op het Peppol-netwerk",
   "both_not_found_paragraph": "Je bent momenteel niet geregistreerd op het Peppol-netwerk en kunt geen facturen ontvangen.",
