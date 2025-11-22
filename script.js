@@ -14,6 +14,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         const url = new URL(smpHostUri);
         const host = url.hostname;
         // Known mappings (extend over time)
+        if (/babelway/i.test(host)) return 'Babelway';
         if (/storecove/i.test(host)) return 'Storecove';
         if (host === 'smp.peppol.comax.be' || /comax\.be/i.test(host)) return 'Comax';
         if (/tradeinterop/i.test(host)) return 'Tradeinterop';
@@ -29,6 +30,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         // Fallback if not a valid URL
         const match = (smpHostUri.match(/https?:\/\/([^\/]*)/) || [])[1];
         if (match) {
+            if (/babelway/i.test(match)) return 'Babelway';
             if (/storecove/i.test(match)) return 'Storecove';
             if (match === 'smp.peppol.comax.be' || /comax\.be/i.test(match)) return 'Comax';
             if (/tradeinterop/i.test(match)) return 'Tradeinterop';
@@ -48,7 +50,8 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
 function mapSoftwareProviders(technicalContact, accessPointName) {
     if (!technicalContact && !accessPointName) return I18n?.t('unknown') || 'Unknown';
     const v = (technicalContact || '').toString().toLowerCase();
-    const ap = (accessPointName || '').toString();
+    const ap = (accessPointName || '').toString().toLowerCase();
+    
     // Direct email/URL mappings
     if (v === 'openpeppol@exact.com') return 'Exact Online';
     if (v === 'peppol@storecove.com') return 'Accountable, Lucy or Yuki';
@@ -56,15 +59,19 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'support@billit.com') return 'Billit';
     if (v === 'peppol@teamleader.eu') return 'Teamleader';
     if (v === 'https://codabox.com') return 'Doccle, Clearfacts or Eenvoudigfactureren.be';
-    if (v === 'support@babelway.com') return 'Mercurius';
+    if (v === 'support@babelway.com' || v.includes('mercurius') || ap.includes('babelway')) return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
     if (v === 'support@e-invoice.be') return 'e-invoice.be';
     if (v === 'support@onfact.be') return 'OnFact';
     if (v === 'peppol.support@odoo.com') return 'Odoo';
-    // AP-name-specific mapping
-    if (ap === 'Tradeshift Belgium') return 'Mercurius';
+    
+    // AP-name-specific mappings
+    if (ap.includes('tradeshift')) return 'Mercurius';
+    
     // Fallback to AP name if we don't have a richer mapping, so it's not unknown
-    return ap || (I18n?.t('unknown') || 'Unknown');
+    if (ap) return accessPointName; // Return the original case of accessPointName
+    
+    return I18n?.t('unknown') || 'Unknown';
 }
 
 // Belgian VAT number validation and formatting
