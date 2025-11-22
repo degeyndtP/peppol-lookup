@@ -179,21 +179,29 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         }
     }
     
-    // Extract business card info
+    // Extract business card info (primary)
     if (businessCardData && businessCardData.entity && businessCardData.entity.length > 0) {
         const entity = businessCardData.entity[0];
-        
         if (entity.name && entity.name.length > 0) {
             info.companyName = entity.name[0].name || null;
         }
-        
         info.country = entity.countrycode || null;
         info.additionalInfo = entity.additionalinfo || null;
-        
-        // Technical contact might be in additional info or contact details
         if (entity.contact && entity.contact.length > 0) {
             const contact = entity.contact[0];
             info.technicalContact = contact.name || contact.email || null;
+        }
+    } else if (smpData && smpData.businesscard && smpData.businesscard.entity && smpData.businesscard.entity.length > 0) {
+        // Fallback: parse business card from SMP response when provided via ?businessCard=true
+        const entity = smpData.businesscard.entity[0];
+        if (entity.name && entity.name.length > 0) {
+            info.companyName = info.companyName || (entity.name[0].name || null);
+        }
+        info.country = info.country || entity.countrycode || null;
+        info.additionalInfo = info.additionalInfo || entity.additionalinfo || null;
+        if (entity.contact && entity.contact.length > 0) {
+            const contact = entity.contact[0];
+            info.technicalContact = info.technicalContact || contact.name || contact.email || null;
         }
     }
     
@@ -515,10 +523,24 @@ async function performLookup() {
         showSection('loading');
         
         // Perform both lookups in parallel
-        const [info0208, info9925] = await Promise.all([
+        let [info0208, info9925] = await Promise.all([
             lookupByEncodedId(encoded0208),
             lookupByEncodedId(encoded9925)
         ]);
+
+        // Cross-scheme fallback: if one scheme has basic identity fields and the other is missing them, reuse
+        try {
+            if (info0208 && info9925) {
+                const src = (info0208.companyName ? info0208 : info9925);
+                const dst = (src === info0208 ? info9925 : info0208);
+                if (dst) {
+                    if (!dst.companyName && src.companyName) dst.companyName = src.companyName;
+                    if (!dst.country && src.country) dst.country = src.country;
+                    if (!dst.technicalContact && src.technicalContact) dst.technicalContact = src.technicalContact;
+                    if (!dst.softwareProviders && src.softwareProviders) dst.softwareProviders = src.softwareProviders;
+                }
+            }
+        } catch (_) { /* ignore */ }
 
         // Pass through raw results (may be null) so renderer can decide messaging/UI
         displayCompanyInfoPair(info0208, info9925);
