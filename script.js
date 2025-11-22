@@ -547,16 +547,13 @@ async function performLookup() {
             lookupByEncodedId(encoded9925)
         ]);
 
-        // Cross-scheme fallback: if one scheme has basic identity fields and the other is missing them, reuse
+        // Cross-scheme enrichment: copy missing fields in BOTH directions when the other has them
         try {
             if (info0208 && info9925) {
-                const src = (info0208.companyName ? info0208 : info9925);
-                const dst = (src === info0208 ? info9925 : info0208);
-                if (dst) {
-                    if (!dst.companyName && src.companyName) dst.companyName = src.companyName;
-                    if (!dst.country && src.country) dst.country = src.country;
-                    if (!dst.technicalContact && src.technicalContact) dst.technicalContact = src.technicalContact;
-                    if (!dst.softwareProviders && src.softwareProviders) dst.softwareProviders = src.softwareProviders;
+                const fields = ['companyName','country','technicalContact','accessPointName','softwareProviders'];
+                for (const f of fields) {
+                    if (!info0208[f] && info9925[f]) info0208[f] = info9925[f];
+                    if (!info9925[f] && info0208[f]) info9925[f] = info0208[f];
                 }
             }
         } catch (_) { /* ignore */ }
