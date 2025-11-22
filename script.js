@@ -219,6 +219,17 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
             info.technicalContact = info.technicalContact || contact.name || contact.email || null;
         }
     }
+    // Derive SMP Host URI and AP name from SMP response if provided
+    if (smpData) {
+        const smpUri = smpData.smpHostURI || smpData.smpHostUri || smpData.host || smpData.smp || null;
+        if (!info.smpHostUri && smpUri) info.smpHostUri = smpUri;
+        if (!info.accessPointName && info.smpHostUri) {
+            try { info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri); } catch (_) { /* ignore */ }
+        }
+        if (!info.softwareProviders) {
+            info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+        }
+    }
     // If we have any business card data (primary or via SMP), and existence wasn't explicitly false, set exists
     if ((businessCardData || (smpData && smpData.businesscard)) && (existenceData == null || typeof existenceData.exists === 'undefined')) {
         info.participantExists = true;
@@ -555,24 +566,24 @@ async function performLookup() {
                     if (!info0208[f] && info9925[f]) info0208[f] = info9925[f];
                     if (!info9925[f] && info0208[f]) info9925[f] = info0208[f];
                 }
-                // Normalize AP name from SMP Host if still missing, and derive providers consistently
-                const normalize = (info) => {
-                    if (!info) return info;
-                    if (!info.accessPointName && info.smpHostUri) {
-                        info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
-                    }
-                    // Country-specific tweak for Tradeshift generic host
-                    if (info.accessPointName === 'Tradeshift' && info.country === 'BE') {
-                        info.accessPointName = 'Tradeshift Belgium';
-                    }
-                    if (!info.softwareProviders) {
-                        info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
-                    }
-                    return info;
-                };
-                info0208 = normalize(info0208);
-                info9925 = normalize(info9925);
             }
+            // Normalize AP name from SMP Host if still missing, and derive providers consistently for each result
+            const normalize = (info) => {
+                if (!info) return info;
+                if (!info.accessPointName && info.smpHostUri) {
+                    info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri);
+                }
+                // Country-specific tweak for Tradeshift generic host
+                if (info && info.accessPointName === 'Tradeshift' && info.country === 'BE') {
+                    info.accessPointName = 'Tradeshift Belgium';
+                }
+                if (!info.softwareProviders) {
+                    info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                }
+                return info;
+            };
+            info0208 = normalize(info0208);
+            info9925 = normalize(info9925);
         } catch (_) { /* ignore */ }
 
         // Pass through raw results (may be null) so renderer can decide messaging/UI
