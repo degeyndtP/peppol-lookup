@@ -257,7 +257,9 @@ header h1 {
 }
 
 .powered-by .brand-logo {
-    height: 36px;
+    height: 60px;
+    width: 300px;
+    object-fit: contain;
     margin: 0;
 }
 
