@@ -704,6 +704,8 @@ async function performLookup() {
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Add warning icons to dot divs
+    addWarningIcons();
     // Allow Enter key to trigger lookup
     document.getElementById('companyNumber').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {

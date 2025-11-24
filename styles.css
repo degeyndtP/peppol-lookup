@@ -589,6 +589,7 @@ footer {
 footer a {
     color: var(--tl-primary-700);
     text-decoration: none;
+    margin-right: -4px;
 }
 
 footer a:hover {
