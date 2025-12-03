@@ -663,23 +663,40 @@ async function performLookup() {
             
             // If both lookups exist, ensure they share the same mapping
             if (info0208 && info9925) {
-                // Determine which lookup has better information
-                const sourceInfo = info9925.technicalContact || info9925.accessPointName ? info9925 : 
-                                 info0208.technicalContact || info0208.accessPointName ? info0208 : null;
+                // Prefer a source that already has rich softwareProviders info
+                const pickSource = () => {
+                    const hasRichProviders = (info) => {
+                        return info && typeof info.softwareProviders === 'string' &&
+                               info.softwareProviders.toLowerCase() !== (I18n?.t('unknown') || 'Unknown').toLowerCase();
+                    };
+                    if (hasRichProviders(info9925)) return info9925;
+                    if (hasRichProviders(info0208)) return info0208;
+                    // Fallback to previous heuristic based on technical contact / AP name
+                    if (info9925.technicalContact || info9925.accessPointName) return info9925;
+                    if (info0208.technicalContact || info0208.accessPointName) return info0208;
+                    return null;
+                };
+
+                const sourceInfo = pickSource();
                 
                 if (sourceInfo) {
-                    // Copy mapping information to both lookups
-                    const targetFields = ['technicalContact', 'accessPointName', 'softwareProviders'];
                     [info0208, info9925].forEach(target => {
-                        if (target) {
-                            targetFields.forEach(field => {
-                                if (sourceInfo[field] && !target[field]) {
-                                    target[field] = sourceInfo[field];
-                                }
-                            });
-                            
-                            // Ensure software providers are consistent
-                            if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
+                        if (!target) return;
+
+                        // Copy technicalContact and accessPointName only when missing
+                        ['technicalContact', 'accessPointName'].forEach(field => {
+                            if (sourceInfo[field] && !target[field]) {
+                                target[field] = sourceInfo[field];
+                            }
+                        });
+
+                        // For softwareProviders, only fill when missing or Unknown, never overwrite an enriched value
+                        const hasEnrichedProviders = target.softwareProviders &&
+                            target.softwareProviders.toLowerCase() !== (I18n?.t('unknown') || 'Unknown').toLowerCase();
+                        if (!hasEnrichedProviders) {
+                            if (sourceInfo.softwareProviders) {
+                                target.softwareProviders = sourceInfo.softwareProviders;
+                            } else if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
                                 target.softwareProviders = mapSoftwareProviders(
                                     target.technicalContact || sourceInfo.technicalContact,
                                     target.accessPointName || sourceInfo.accessPointName
