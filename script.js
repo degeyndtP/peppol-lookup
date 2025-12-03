@@ -8,6 +8,23 @@ const SML_ID = 'digitprod';
 let LAST_COMPANY_INFO = null;
 let AUTO_LOOKUP_RAN = false;
 
+// Add warning icons into the small dot elements of the illustration
+function addWarningIcons() {
+    try {
+        const dots = document.querySelectorAll('.results-display .illus .dot');
+        dots.forEach(dot => {
+            dot.style.backgroundImage = 'url("Warning_icon.png")';
+            dot.style.backgroundSize = 'contain';
+            dot.style.backgroundRepeat = 'no-repeat';
+            dot.style.backgroundPosition = 'center';
+            // Ensure the background color does not hide the icon
+            dot.style.backgroundColor = 'transparent';
+        });
+    } catch (e) {
+        console.warn('addWarningIcons failed:', e);
+    }
+}
+
 // Derive a human-readable Access Point name from an SMP Host URI
 function getAccessPointNameFromSmpUri(smpHostUri) {
     if (!smpHostUri || typeof smpHostUri !== 'string') return I18n?.t('not_available') || 'Not available';
