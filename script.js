@@ -731,21 +731,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Prefill from URL path and auto-run lookup (e.g., /1018174653 or /BE0123456789)
     try {
         const path = (window.location && window.location.pathname) ? window.location.pathname : '';
-        // Extract first non-empty segment
-        const slug = path.replace(/^\/+/, '').split(/[\/\?#]/)[0];
-        if (slug) {
-            // Accept digits or BE-prefixed digits
-            const normalized = decodeURIComponent(slug).toUpperCase();
-            if (/^(BE)?\d{10}$/.test(normalized)) {
+        // Look for a segment that is either 10 digits or BE + 10 digits
+        // Handles: /1234567890, /BE1234567890, /1234567890/, /foo/1234567890?x=1, etc.
+        const match = path.match(/(?:^|\/)(BE\d{10}|\d{10})(?:[\/#?]|$)/i);
+        if (match) {
+            const numberMatch = match[1].toUpperCase();     // "BE0123456789" or "0123456789"
+            const normalized = numberMatch.replace(/^BE/, ''); // strip BE for validation
+
+            if (/^\d{10}$/.test(normalized)) {
                 const inputEl = document.getElementById('companyNumber');
                 if (inputEl) {
-                    inputEl.value = normalized;
-                    // Auto-trigger lookup
-                    performLookup();
+                    // Show BE-prefixed value in the input; performLookup will handle both schemes
+                    inputEl.value = `BE${normalized}`;
+                    // Slight delay to ensure DOM is settled before triggering lookup
+                    setTimeout(performLookup, 100);
                 }
             }
         }
-    } catch (_) { /* ignore */ }
+    } catch (error) {
+        console.error('Error processing URL for auto-lookup:', error);
+        // Fail silently for the user; just don't auto-run
+    }
 });
 
 // Make performLookup available globally
