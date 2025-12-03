@@ -43,6 +43,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         if (/onfact\.be/i.test(host)) return 'Infinwebs BV';
         if (/odoo/i.test(host)) return 'Odoo';
         if (/codabox\.com/i.test(host)) return 'Codabox';
+        if (/billit/i.test(host)) return 'Billit';
         // Default to prettified hostname
         return host.replace(/^www\./, '');
     } catch (_) {
@@ -60,6 +61,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
             if (/onfact\.be/i.test(match)) return 'Infinwebs BV';
             if (/odoo/i.test(match)) return 'Odoo';
             if (/codabox\.com/i.test(match)) return 'Codabox';
+            if (/billit/i.test(match)) return 'Billit';
             return match.replace(/^www\./, '');
         }
         return smpHostUri;
