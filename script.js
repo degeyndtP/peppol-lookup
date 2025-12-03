@@ -723,7 +723,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function autoLookupFromUrlOnce() {
         if (AUTO_LOOKUP_RAN) return;
-        AUTO_LOOKUP_RAN = true;
         try {
             const path = (window.location && window.location.pathname) ? window.location.pathname : '';
             const match = path.match(/(?:^|\/)(BE\d{10}|\d{10})(?:[\/#?]|$)/i);
@@ -735,6 +734,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (inputEl) {
                         inputEl.value = `BE${normalized}`;
                         setTimeout(performLookup, 100);
+                        // Mark as done only after we successfully scheduled a lookup
+                        AUTO_LOOKUP_RAN = true;
                     }
                 }
             }
