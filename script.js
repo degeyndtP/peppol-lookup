@@ -266,6 +266,8 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
 // Build HTML block for a single company info panel
 function buildCompanyInfoHtml(info, heading) {
     const notAvail = I18n?.t('not_available') || 'Not available';
+    // Always derive the displayed software providers from the final technical contact and access point
+    const providers = mapSoftwareProviders(info.technicalContact, info.accessPointName);
     return `
         <div role="group" aria-label="${heading}" style="flex:1; min-width:320px; padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;">
             <div class="panel-title" style="font-weight:700; font-size:18px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">
@@ -277,7 +279,7 @@ function buildCompanyInfoHtml(info, heading) {
             </div>
             <div class="info-item">
                 <span class="info-label">${I18n?.t('label_software_providers') || '🧩 Software providers using this accesspoint:'}</span>
-                <span class="info-value">${info.softwareProviders || (I18n?.t('unknown') || 'Unknown')}</span>
+                <span class="info-value">${providers || (I18n?.t('unknown') || 'Unknown')}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">${I18n?.t('label_technical_contact') || '👨‍💼 Technical Contact:'}</span>
