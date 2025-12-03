@@ -78,8 +78,8 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
 
 // Belgian VAT number validation and formatting
 function formatBelgianNumber(input) {
-    // Remove spaces and convert to uppercase
-    let cleaned = input.replace(/\s/g, '').toUpperCase();
+    // Remove spaces, dots and dashes and convert to uppercase
+    let cleaned = input.replace(/[\s.\-]/g, '').toUpperCase();
     
     // Remove BE prefix if present
     if (cleaned.startsWith('BE')) {
@@ -95,11 +95,11 @@ function formatBelgianNumber(input) {
     // Belgian scheme is 0208 according to ISO 6523
     return `iso6523-actorid-upis::0208:${cleaned}`;
 }
-
+ 
 // Belgian VAT number formatted for scheme 9925 with BE prefix (BEXXXXXXXXXX)
 function formatBelgianNumber9925(input) {
-    // Remove spaces and convert to uppercase
-    let cleaned = input.replace(/\s/g, '').toUpperCase();
+    // Remove spaces, dots and dashes and convert to uppercase
+    let cleaned = input.replace(/[\s.\-]/g, '').toUpperCase();
     if (cleaned.startsWith('BE')) {
         cleaned = cleaned.substring(2);
     }
