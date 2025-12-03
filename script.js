@@ -253,9 +253,7 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         if (!info.accessPointName && info.smpHostUri) {
             try { info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri); } catch (_) { /* ignore */ }
         }
-        if (!info.softwareProviders) {
-            info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
-        }
+        // Do not map softwareProviders here yet; wait until we have more complete data
     }
     // If we have any business card data (primary or via SMP), and existence wasn't explicitly false, set exists
     if ((businessCardData || (smpData && smpData.businesscard)) && (existenceData == null || typeof existenceData.exists === 'undefined')) {
@@ -598,8 +596,17 @@ async function lookupByEncodedId(encodedParticipantId) {
 
     // Ensure we have the most accurate software providers and access point names
     if (companyInfo.accessPointName) {
-        // If we have an access point but no software providers, try to map it
-        if (!companyInfo.softwareProviders) {
+        const unknown = (I18n?.t('unknown') || 'Unknown').toLowerCase();
+        const apLower = String(companyInfo.accessPointName || '').toLowerCase();
+        const current = String(companyInfo.softwareProviders || '').toLowerCase();
+
+        // Consider providers generic if missing, Unknown, or equal to the AP name
+        const providersLooksGeneric =
+            !companyInfo.softwareProviders ||
+            current === unknown ||
+            (apLower && current === apLower);
+
+        if (providersLooksGeneric) {
             companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
         }
     } else if (companyInfo.technicalContact) {
