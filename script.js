@@ -649,8 +649,10 @@ async function performLookup() {
                     info.accessPointName = 'Tradeshift Belgium';
                 }
                 
-                // Always re-map software providers to ensure consistency
-                info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                // Only map software providers if not already enriched
+                if (!info.softwareProviders) {
+                    info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                }
                 
                 return info;
             };
