@@ -690,8 +690,12 @@ async function performLookup() {
                 // Prefer a source that already has rich softwareProviders info
                 const pickSource = () => {
                     const hasRichProviders = (info) => {
-                        return info && typeof info.softwareProviders === 'string' &&
-                               info.softwareProviders.toLowerCase() !== (I18n?.t('unknown') || 'Unknown').toLowerCase();
+                        if (!info || typeof info.softwareProviders !== 'string') return false;
+                        const unknown = (I18n?.t('unknown') || 'Unknown').toLowerCase();
+                        const prov = info.softwareProviders.toLowerCase();
+                        const ap = (info.accessPointName || '').toString().toLowerCase();
+                        // Rich if it's not Unknown and not just mirroring the AP name
+                        return prov && prov !== unknown && (!ap || prov !== ap);
                     };
                     if (hasRichProviders(info9925)) return info9925;
                     if (hasRichProviders(info0208)) return info0208;
