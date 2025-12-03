@@ -76,7 +76,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'openpeppol@exact.com') return 'Exact Online';
     if (v === 'peppol@storecove.com') return 'Accountable, Lucy or Yuki';
     if (v === 'support@okioki.be') return 'OkiOki';
-    if (v === 'support@billit.com') return 'Billit';
+    if (v === 'support@billit.com' || v === 'support@billit.be') return 'Billit';
     if (v === 'peppol@teamleader.eu') return 'Teamleader';
     if (v === 'https://codabox.com') return 'Doccle, Clearfacts or Eenvoudigfactureren.be';
     if (v === 'support@babelway.com' || v.includes('mercurius') || ap.includes('babelway')) return 'Mercurius';
