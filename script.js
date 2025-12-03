@@ -6,6 +6,7 @@ const SML_ID = 'digitprod';
 
 // Cache last company info for i18n re-rendering
 let LAST_COMPANY_INFO = null;
+let AUTO_LOOKUP_RAN = false;
 
 // Derive a human-readable Access Point name from an SMP Host URI
 function getAccessPointNameFromSmpUri(smpHostUri) {
@@ -719,39 +720,41 @@ document.addEventListener('DOMContentLoaded', function() {
         let value = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '');
         e.target.value = value;
     });
-    // Re-render results on language changes
+
+    function autoLookupFromUrlOnce() {
+        if (AUTO_LOOKUP_RAN) return;
+        AUTO_LOOKUP_RAN = true;
+        try {
+            const path = (window.location && window.location.pathname) ? window.location.pathname : '';
+            const match = path.match(/(?:^|\/)(BE\d{10}|\d{10})(?:[\/#?]|$)/i);
+            if (match) {
+                const numberMatch = match[1].toUpperCase();
+                const normalized = numberMatch.replace(/^BE/, '');
+                if (/^\d{10}$/.test(normalized)) {
+                    const inputEl = document.getElementById('companyNumber');
+                    if (inputEl) {
+                        inputEl.value = `BE${normalized}`;
+                        setTimeout(performLookup, 100);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error processing URL for auto-lookup:', error);
+        }
+    }
+
+    // Re-render results on language changes and try auto-lookup once when i18n is ready
     document.addEventListener('i18n:applied', () => {
         if (LAST_COMPANY_INFO) {
             if (LAST_COMPANY_INFO.info0208 && LAST_COMPANY_INFO.info9925) {
                 displayCompanyInfoPair(LAST_COMPANY_INFO.info0208, LAST_COMPANY_INFO.info9925);
             }
         }
+        autoLookupFromUrlOnce();
     });
 
-    // Prefill from URL path and auto-run lookup (e.g., /1018174653 or /BE0123456789)
-    try {
-        const path = (window.location && window.location.pathname) ? window.location.pathname : '';
-        // Look for a segment that is either 10 digits or BE + 10 digits
-        // Handles: /1234567890, /BE1234567890, /1234567890/, /foo/1234567890?x=1, etc.
-        const match = path.match(/(?:^|\/)(BE\d{10}|\d{10})(?:[\/#?]|$)/i);
-        if (match) {
-            const numberMatch = match[1].toUpperCase();     // "BE0123456789" or "0123456789"
-            const normalized = numberMatch.replace(/^BE/, ''); // strip BE for validation
-
-            if (/^\d{10}$/.test(normalized)) {
-                const inputEl = document.getElementById('companyNumber');
-                if (inputEl) {
-                    // Show BE-prefixed value in the input; performLookup will handle both schemes
-                    inputEl.value = `BE${normalized}`;
-                    // Slight delay to ensure DOM is settled before triggering lookup
-                    setTimeout(performLookup, 100);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error processing URL for auto-lookup:', error);
-        // Fail silently for the user; just don't auto-run
-    }
+    // Also attempt auto-lookup once on initial DOM ready
+    autoLookupFromUrlOnce();
 });
 
 // Make performLookup available globally
