@@ -81,7 +81,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     if (v === 'peppol@storecove.com') return 'Accountable, Lucy or Yuki';
     if (v === 'support@okioki.be') return 'OkiOki';
     if (v === 'support@billit.com' || v === 'support@billit.be') return 'Billit';
-    if (v === 'peppol@teamleader.eu') return 'Teamleader';
+    if (v === 'peppol@teamleader.eu') return 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
     if (v === 'https://codabox.com') return 'Doccle, Clearfacts or Eenvoudigfactureren.be';
     if (v === 'support@babelway.com' || v.includes('mercurius') || ap.includes('babelway')) return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
