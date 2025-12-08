@@ -45,6 +45,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
         if (/codabox\.com/i.test(host)) return 'Codabox';
         if (/billit/i.test(host)) return 'Billit';
         if (/crossinx/i.test(host)) return 'Billtobox';
+        if (/octopus/i.test(host)) return 'Octopus';
         // Default to prettified hostname
         return host.replace(/^www\./, '');
     } catch (_) {
@@ -64,6 +65,7 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
             if (/codabox\.com/i.test(match)) return 'Codabox';
             if (/billit/i.test(match)) return 'Billit';
             if (/crossinx/i.test(match)) return 'Billtobox';
+            if (/octopus/i.test(match)) return 'Octopus';
             return match.replace(/^www\./, '');
         }
         return smpHostUri;
