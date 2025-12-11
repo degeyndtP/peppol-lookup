@@ -43,7 +43,11 @@
     right: 16.67%;
     top: 16.67%;
     bottom: 16.67%;
-    background: #FF7142; /* Ruby/300 */
+    background-color: transparent;
+    background-image: url("Warning_icon.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     border-radius: 8px;
 }
 
