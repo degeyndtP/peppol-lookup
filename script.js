@@ -344,6 +344,8 @@ function displayCompanyInfoPair(info0208, info9925) {
                 </div>
             </div>`;
         showSection('results');
+        // Ensure the warning icon is applied to the dot inside the newly rendered card
+        addWarningIcons();
         LAST_COMPANY_INFO = { info0208, info9925 };
         return;
     }
@@ -383,6 +385,8 @@ function displayCompanyInfoPair(info0208, info9925) {
             </div>
         `;
         showSection('results');
+        // Ensure the warning icon is applied to the dot inside the newly rendered card
+        addWarningIcons();
         LAST_COMPANY_INFO = { info0208, info9925 };
         return;
     }
@@ -719,12 +723,27 @@ async function performLookup() {
                     [info0208, info9925].forEach(target => {
                         if (!target) return;
 
-                        // Copy technicalContact and accessPointName only when missing
-                        ['technicalContact', 'accessPointName'].forEach(field => {
-                            if (sourceInfo[field] && !target[field]) {
-                                target[field] = sourceInfo[field];
+                        // Copy technicalContact directly when missing
+                        if (sourceInfo.technicalContact && !target.technicalContact) {
+                            target.technicalContact = sourceInfo.technicalContact;
+                        }
+
+                        // For accessPointName, allow overwrite when current value looks generic
+                        if (sourceInfo.accessPointName) {
+                            const currentAp = (target.accessPointName || '').toString().toLowerCase();
+                            const srcAp = sourceInfo.accessPointName;
+                            const srcApLower = srcAp.toLowerCase();
+                            const smpLower = (target.smpHostUri || '').toString().toLowerCase();
+
+                            const apLooksGeneric = !currentAp ||
+                                currentAp === smpLower ||
+                                /^smp[.-]/.test(currentAp) ||
+                                currentAp === 'smp-lookup.ixor.be';
+
+                            if (apLooksGeneric || !target.accessPointName) {
+                                target.accessPointName = srcAp;
                             }
-                        });
+                        }
 
                         // For softwareProviders, only fill when missing or Unknown, never overwrite an enriched value
                         const hasEnrichedProviders = target.softwareProviders &&
