@@ -80,7 +80,7 @@ function mapSoftwareProviders(technicalContact, accessPointName) {
     
     // Direct email/URL mappings
     if (v === 'openpeppol@exact.com') return 'Exact Online';
-    if (v === 'peppol@storecove.com') return 'Accountable, Lucy or Yuki';
+    if (v === 'peppol@storecove.com') return 'Accountable, Zenvoices, Lucy or Yuki';
     if (v === 'support@okioki.be') return 'OkiOki';
     if (v === 'support@billit.com' || v === 'support@billit.be') return 'Billit';
     if (v === 'peppol@teamleader.eu') return 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
@@ -530,7 +530,7 @@ async function lookupByEncodedId(encodedParticipantId) {
                                 { 
                                     contact: 'peppol@storecove.com', 
                                     accessPoint: 'Storecove',
-                                    software: 'Accountable, Lucy or Yuki'
+                                    software: 'Accountable, Zenvoices, Lucy or Yuki'
                                 },
                                 { 
                                     contact: 'https://codabox.com', 
