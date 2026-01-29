@@ -88,12 +88,18 @@ function mapSoftwareProviders(technicalContact, accessPointName, documentTypes) 
             if (dt && typeof dt === 'object') {
                 if (typeof dt.documentTypeName === 'string') candidates.push(dt.documentTypeName);
                 if (typeof dt.documentTypeID === 'string') candidates.push(dt.documentTypeID);
+                if (typeof dt.niceName === 'string') candidates.push(dt.niceName);
                 if (typeof dt.name === 'string') candidates.push(dt.name);
                 if (typeof dt.id === 'string') candidates.push(dt.id);
             }
             return candidates.some((c) => {
                 const s = String(c).toLowerCase();
-                return s === label || (s.includes('self-billing') && s.includes('invoice') && s.includes('v3'));
+                if (s === label) return true;
+                if ((s.includes('self-billing') || s.includes('selfbilling')) && s.includes('invoice') && (s.includes('v3') || s.includes('3.0'))) return true;
+                // URN-style identifiers
+                if (s.includes('poacc:selfbilling:3.0') && s.includes('invoice-2') && s.includes('::invoice')) return true;
+                if (s.includes('poacc:selfbilling:3.0') && s.includes('invoice')) return true;
+                return false;
             });
         });
     })();
