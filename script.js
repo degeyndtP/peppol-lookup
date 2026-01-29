@@ -73,17 +73,40 @@ function getAccessPointNameFromSmpUri(smpHostUri) {
 }
 
 // Map software providers based on the technical contact email (extend as needed)
-function mapSoftwareProviders(technicalContact, accessPointName) {
+function mapSoftwareProviders(technicalContact, accessPointName, documentTypes) {
     if (!technicalContact && !accessPointName) return I18n?.t('unknown') || 'Unknown';
     const v = (technicalContact || '').toString().toLowerCase();
     const ap = (accessPointName || '').toString().toLowerCase();
+
+    const hasSelfBillingInvoiceV3 = (() => {
+        if (!documentTypes) return false;
+        const label = 'peppol bis self-billing ubl invoice v3';
+        const list = Array.isArray(documentTypes) ? documentTypes : [documentTypes];
+        return list.some((dt) => {
+            const candidates = [];
+            if (typeof dt === 'string') candidates.push(dt);
+            if (dt && typeof dt === 'object') {
+                if (typeof dt.documentTypeName === 'string') candidates.push(dt.documentTypeName);
+                if (typeof dt.documentTypeID === 'string') candidates.push(dt.documentTypeID);
+                if (typeof dt.name === 'string') candidates.push(dt.name);
+                if (typeof dt.id === 'string') candidates.push(dt.id);
+            }
+            return candidates.some((c) => {
+                const s = String(c).toLowerCase();
+                return s === label || (s.includes('self-billing') && s.includes('invoice') && s.includes('v3'));
+            });
+        });
+    })();
     
     // Direct email/URL mappings
     if (v === 'openpeppol@exact.com') return 'Exact Online';
     if (v === 'peppol@storecove.com') return 'Accountable, Zenvoices, Lucy or Yuki';
     if (v === 'support@okioki.be') return 'OkiOki';
     if (v === 'support@billit.com' || v === 'support@billit.be') return 'Billit';
-    if (v === 'peppol@teamleader.eu') return 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit';
+    if (v === 'peppol@teamleader.eu') {
+        if (hasSelfBillingInvoiceV3) return 'Dexxter';
+        return 'Teamleader Focus, Teamleader One of Teamleader Orbit';
+    }
     if (v === 'https://codabox.com') return 'Doccle, Clearfacts or Eenvoudigfactureren.be';
     if (v === 'support@babelway.com' || v.includes('mercurius') || ap.includes('babelway')) return 'Mercurius';
     if (v === 'info@dokapi.io') return 'Dokapi (previously: Ixor Docs)';
@@ -215,7 +238,8 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         smpHostUri: null,
         participantExists: false,
         accessPointName: null,
-        serviceEndpoint: null
+        serviceEndpoint: null,
+        documentTypes: null
     };
     
     // Extract existence info
@@ -259,6 +283,7 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
         if (!info.accessPointName && info.smpHostUri) {
             try { info.accessPointName = getAccessPointNameFromSmpUri(info.smpHostUri); } catch (_) { /* ignore */ }
         }
+        if (!info.documentTypes && smpData.urls) info.documentTypes = smpData.urls;
         // Do not map softwareProviders here yet; wait until we have more complete data
     }
     // If we have any business card data (primary or via SMP), and existence wasn't explicitly false, set exists
@@ -273,7 +298,7 @@ function extractCompanyInfo(businessCardData, smpData, existenceData) {
 function buildCompanyInfoHtml(info, heading) {
     const notAvail = I18n?.t('not_available') || 'Not available';
     // Always derive the displayed software providers from the final technical contact and access point
-    const providers = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+    const providers = mapSoftwareProviders(info.technicalContact, info.accessPointName, info.documentTypes);
     return `
         <div role="group" aria-label="${heading}" style="flex:1; min-width:320px; padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;">
             <div class="panel-title" style="font-weight:700; font-size:18px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">
@@ -495,7 +520,7 @@ async function lookupByEncodedId(encodedParticipantId) {
                                 { 
                                     contact: 'peppol@teamleader.eu', 
                                     accessPoint: 'Teamleader',
-                                    software: 'Teamleader Focus, Teamleader One, Dexxter or Teamleader Orbit'
+                                    software: null
                                 },
                                 { 
                                     contact: 'support@e-invoice.be', 
@@ -543,7 +568,15 @@ async function lookupByEncodedId(encodedParticipantId) {
                             const mapping = contactMappings.find(m => m.contact.toLowerCase() === t);
                             if (mapping) {
                                 companyInfo.accessPointName = mapping.accessPoint;
-                                companyInfo.softwareProviders = mapping.software;
+                                if (mapping.software) {
+                                    companyInfo.softwareProviders = mapping.software;
+                                } else {
+                                    companyInfo.softwareProviders = mapSoftwareProviders(
+                                        t,
+                                        mapping.accessPoint,
+                                        companyInfo.documentTypes
+                                    );
+                                }
                             }
                         }
                         // If technical contact is Codabox URL, set AP to Codabox
@@ -619,11 +652,11 @@ async function lookupByEncodedId(encodedParticipantId) {
             (apLower && current === apLower);
 
         if (providersLooksGeneric) {
-            companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
+            companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName, companyInfo.documentTypes);
         }
     } else if (companyInfo.technicalContact) {
         // If we have a technical contact but no access point, try to derive it
-        const mapped = mapSoftwareProviders(companyInfo.technicalContact, '');
+        const mapped = mapSoftwareProviders(companyInfo.technicalContact, '', companyInfo.documentTypes);
         if (mapped && mapped !== 'Unknown') {
             companyInfo.softwareProviders = mapped;
             // For some providers, we can infer the access point from the software
@@ -639,7 +672,7 @@ async function lookupByEncodedId(encodedParticipantId) {
     
     // Final fallback to mapping function if we still don't have software providers
     if (!companyInfo.softwareProviders) {
-        companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName);
+        companyInfo.softwareProviders = mapSoftwareProviders(companyInfo.technicalContact, companyInfo.accessPointName, companyInfo.documentTypes);
     }
     return companyInfo;
 }
@@ -687,7 +720,7 @@ async function performLookup() {
                 
                 // Only map software providers if not already enriched
                 if (!info.softwareProviders) {
-                    info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName);
+                    info.softwareProviders = mapSoftwareProviders(info.technicalContact, info.accessPointName, info.documentTypes);
                 }
                 
                 return info;
@@ -728,6 +761,11 @@ async function performLookup() {
                             target.technicalContact = sourceInfo.technicalContact;
                         }
 
+                        // Copy documentTypes when missing (needed for conditional Teamleader/Dexxter mapping)
+                        if (sourceInfo.documentTypes && !target.documentTypes) {
+                            target.documentTypes = sourceInfo.documentTypes;
+                        }
+
                         // For accessPointName, allow overwrite when current value looks generic
                         if (sourceInfo.accessPointName) {
                             const currentAp = (target.accessPointName || '').toString().toLowerCase();
@@ -754,7 +792,8 @@ async function performLookup() {
                             } else if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
                                 target.softwareProviders = mapSoftwareProviders(
                                     target.technicalContact || sourceInfo.technicalContact,
-                                    target.accessPointName || sourceInfo.accessPointName
+                                    target.accessPointName || sourceInfo.accessPointName,
+                                    target.documentTypes || sourceInfo.documentTypes
                                 );
                             }
                         }
