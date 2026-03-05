@@ -348,6 +348,22 @@ function displayCompanyInfoPair(info0208, info9925) {
     const exists0208 = !!info0208 && (info0208.participantExists !== false);
     const exists9925 = !!info9925 && (info9925.participantExists !== false);
 
+    const normalize = (s) => {
+        if (s == null) return '';
+        const str = String(s).trim();
+        return str.toLowerCase().startsWith('mailto:') ? str.slice(7).trim().toLowerCase() : str.toLowerCase();
+    };
+
+    const areEquivalentResults = (a, b) => {
+        if (!a || !b) return false;
+        return (
+            normalize(a.technicalContact) === normalize(b.technicalContact) &&
+            normalize(a.accessPointName) === normalize(b.accessPointName) &&
+            normalize(a.softwareProviders) === normalize(b.softwareProviders) &&
+            normalize(a.serviceEndpoint) === normalize(b.serviceEndpoint)
+        );
+    };
+
     // Hermes-specific: if any result indicates Hermes, show only the Hermes warning and hide all other info/warnings
     const hermesDetected = [info0208, info9925].some(i => i && typeof i.softwareProviders === 'string' && /hermes/i.test(i.softwareProviders));
     if (hermesDetected) {
@@ -427,11 +443,8 @@ function displayCompanyInfoPair(info0208, info9925) {
     let bottomBanner = '';
     // Decide panel rendering
     if (exists0208 && exists9925) {
-        const sameAP = (
-            info0208?.accessPointName && info9925?.accessPointName &&
-            String(info0208.accessPointName).toLowerCase() === String(info9925.accessPointName).toLowerCase()
-        );
-        if (sameAP) {
+        const equivalent = areEquivalentResults(info0208, info9925);
+        if (equivalent) {
             parts.push(`
                 <div style="display:flex; gap:20px; align-items:stretch; flex-wrap:wrap; width:100%;">
                     ${buildCompanyInfoHtml(info0208, h0208)}
@@ -748,11 +761,12 @@ async function performLookup() {
                         // Rich if it's not Unknown and not just mirroring the AP name
                         return prov && prov !== unknown && (!ap || prov !== ap);
                     };
-                    if (hasRichProviders(info9925)) return info9925;
-                    if (hasRichProviders(info0208)) return info0208;
-                    // Fallback to previous heuristic based on technical contact / AP name
-                    if (info9925.technicalContact || info9925.accessPointName) return info9925;
+                    // Prefer 0208 as the authoritative Belgian participant identifier when both exist.
+                    // This avoids unstable/incorrect enrichment when 9925 and 0208 point to different providers.
                     if (info0208.technicalContact || info0208.accessPointName) return info0208;
+                    if (info9925.technicalContact || info9925.accessPointName) return info9925;
+                    if (hasRichProviders(info0208)) return info0208;
+                    if (hasRichProviders(info9925)) return info9925;
                     return null;
                 };
 
@@ -793,7 +807,21 @@ async function performLookup() {
                         const hasEnrichedProviders = target.softwareProviders &&
                             target.softwareProviders.toLowerCase() !== (I18n?.t('unknown') || 'Unknown').toLowerCase();
                         if (!hasEnrichedProviders) {
-                            if (sourceInfo.softwareProviders) {
+                            const targetTc = (target.technicalContact || '').toString().toLowerCase();
+                            const sourceTc = (sourceInfo.technicalContact || '').toString().toLowerCase();
+                            const technicalContactConflicts = !!targetTc && !!sourceTc && targetTc !== sourceTc;
+
+                            // If the schemes disagree on technical contact, do not copy providers across;
+                            // instead derive providers from the target's own technical contact/AP/doc types.
+                            if (technicalContactConflicts) {
+                                if (target.technicalContact || target.accessPointName) {
+                                    target.softwareProviders = mapSoftwareProviders(
+                                        target.technicalContact,
+                                        target.accessPointName,
+                                        target.documentTypes
+                                    );
+                                }
+                            } else if (sourceInfo.softwareProviders) {
                                 target.softwareProviders = sourceInfo.softwareProviders;
                             } else if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
                                 target.softwareProviders = mapSoftwareProviders(
