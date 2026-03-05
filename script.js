@@ -504,11 +504,22 @@ async function lookupByEncodedId(encodedParticipantId) {
     // Enrich with detailed SMP endpoint lookup to determine technical contact and access point when needed
     try {
         if (smp && smp.urls && smp.urls.length > 0) {
-            // Prefer the UBL Invoice doc type if present, otherwise use the first
-            let preferred = smp.urls.find(u => (u.documentTypeID || '').includes('Invoice-2')) || smp.urls[0];
-            const docTypeID = preferred.documentTypeID;
-            if (docTypeID) {
-                const detailed = await fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}/${encodeURIComponent(docTypeID)}`);
+            // Prefer the UBL Invoice doc type(s) if present; if a detail lookup fails, try other document types.
+            const urls = smp.urls || [];
+            const invoiceUrls = urls.filter(u => (u.documentTypeID || '').includes('Invoice-2'));
+            const candidates = [...invoiceUrls, ...urls.filter(u => !invoiceUrls.includes(u))];
+
+            for (const candidate of candidates) {
+                const docTypeID = candidate && candidate.documentTypeID;
+                if (!docTypeID) continue;
+
+                let detailed;
+                try {
+                    detailed = await fetchPeppolData(`/smpquery/${SML_ID}/${encodedParticipantId}/${encodeURIComponent(docTypeID)}`);
+                } catch (_) {
+                    continue;
+                }
+
                 const processes = detailed && detailed.serviceinfo && detailed.serviceinfo.processes || [];
                 for (const proc of processes) {
                     const endpoints = proc.endpoints || [];
@@ -651,6 +662,7 @@ async function lookupByEncodedId(encodedParticipantId) {
                     // If we found either technical contact or AP name, we can stop early
                     if (companyInfo.technicalContact || companyInfo.accessPointName) break;
                 }
+                if (companyInfo.technicalContact || companyInfo.accessPointName) break;
             }
         }
     } catch (e) {
@@ -751,88 +763,8 @@ async function performLookup() {
             
             // If both lookups exist, ensure they share the same mapping
             if (info0208 && info9925) {
-                // Prefer a source that already has rich softwareProviders info
-                const pickSource = () => {
-                    const hasRichProviders = (info) => {
-                        if (!info || typeof info.softwareProviders !== 'string') return false;
-                        const unknown = (I18n?.t('unknown') || 'Unknown').toLowerCase();
-                        const prov = info.softwareProviders.toLowerCase();
-                        const ap = (info.accessPointName || '').toString().toLowerCase();
-                        // Rich if it's not Unknown and not just mirroring the AP name
-                        return prov && prov !== unknown && (!ap || prov !== ap);
-                    };
-                    // Prefer 0208 as the authoritative Belgian participant identifier when both exist.
-                    // This avoids unstable/incorrect enrichment when 9925 and 0208 point to different providers.
-                    if (info0208.technicalContact || info0208.accessPointName) return info0208;
-                    if (info9925.technicalContact || info9925.accessPointName) return info9925;
-                    if (hasRichProviders(info0208)) return info0208;
-                    if (hasRichProviders(info9925)) return info9925;
-                    return null;
-                };
-
-                const sourceInfo = pickSource();
-                
-                if (sourceInfo) {
-                    [info0208, info9925].forEach(target => {
-                        if (!target) return;
-
-                        // Copy technicalContact directly when missing
-                        if (sourceInfo.technicalContact && !target.technicalContact) {
-                            target.technicalContact = sourceInfo.technicalContact;
-                        }
-
-                        // Copy documentTypes when missing (needed for conditional Teamleader/Dexxter mapping)
-                        if (sourceInfo.documentTypes && !target.documentTypes) {
-                            target.documentTypes = sourceInfo.documentTypes;
-                        }
-
-                        // For accessPointName, allow overwrite when current value looks generic
-                        if (sourceInfo.accessPointName) {
-                            const currentAp = (target.accessPointName || '').toString().toLowerCase();
-                            const srcAp = sourceInfo.accessPointName;
-                            const srcApLower = srcAp.toLowerCase();
-                            const smpLower = (target.smpHostUri || '').toString().toLowerCase();
-
-                            const apLooksGeneric = !currentAp ||
-                                currentAp === smpLower ||
-                                /^smp[.-]/.test(currentAp) ||
-                                currentAp === 'smp-lookup.ixor.be';
-
-                            if (apLooksGeneric || !target.accessPointName) {
-                                target.accessPointName = srcAp;
-                            }
-                        }
-
-                        // For softwareProviders, only fill when missing or Unknown, never overwrite an enriched value
-                        const hasEnrichedProviders = target.softwareProviders &&
-                            target.softwareProviders.toLowerCase() !== (I18n?.t('unknown') || 'Unknown').toLowerCase();
-                        if (!hasEnrichedProviders) {
-                            const targetTc = (target.technicalContact || '').toString().toLowerCase();
-                            const sourceTc = (sourceInfo.technicalContact || '').toString().toLowerCase();
-                            const technicalContactConflicts = !!targetTc && !!sourceTc && targetTc !== sourceTc;
-
-                            // If the schemes disagree on technical contact, do not copy providers across;
-                            // instead derive providers from the target's own technical contact/AP/doc types.
-                            if (technicalContactConflicts) {
-                                if (target.technicalContact || target.accessPointName) {
-                                    target.softwareProviders = mapSoftwareProviders(
-                                        target.technicalContact,
-                                        target.accessPointName,
-                                        target.documentTypes
-                                    );
-                                }
-                            } else if (sourceInfo.softwareProviders) {
-                                target.softwareProviders = sourceInfo.softwareProviders;
-                            } else if (sourceInfo.technicalContact || sourceInfo.accessPointName) {
-                                target.softwareProviders = mapSoftwareProviders(
-                                    target.technicalContact || sourceInfo.technicalContact,
-                                    target.accessPointName || sourceInfo.accessPointName,
-                                    target.documentTypes || sourceInfo.documentTypes
-                                );
-                            }
-                        }
-                    });
-                }
+                // Intentionally do not copy/enrich across schemes: 0208 (KBO) and 9925 (VAT)
+                // may legitimately point to different SMP/AP/technical contacts.
             }
         } catch (e) {
             console.error('Error during cross-scheme enrichment:', e);
