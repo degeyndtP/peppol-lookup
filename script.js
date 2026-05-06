@@ -607,6 +607,7 @@ async function fetchPeppolData(endpoint) {
     console.log('Endpoint includes /smpquery/:', endpoint.includes('/smpquery/'));
     
     if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
+        console.log('*** ENTERING FALLBACK BLOCK ***');
         console.log('Trying SMP Direct fallback...');
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
