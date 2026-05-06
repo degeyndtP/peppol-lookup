@@ -608,11 +608,8 @@ async function fetchPeppolData(endpoint) {
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
             const directoryData = await queryOpenPeppolDirectory(participantId);
-            if (endpoint.includes('/ppidexistence/')) {
-                return { participantID: participantId, exists: directoryData.exists, sml: SML_ID, queryDateTime: directoryData.queryDateTime, queryDurationMillis: directoryData.queryDurationMillis };
-            } else {
-                return directoryData;
-            }
+            // Always return the complete data, regardless of endpoint type
+            return directoryData;
         } catch (directoryError) {
             lastError = directoryError;
         }
@@ -634,11 +631,8 @@ async function fetchPeppolData(endpoint) {
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
             const directoryWebData = await queryPeppolDirectoryWeb(participantId);
-            if (endpoint.includes('/ppidexistence/')) {
-                return { participantID: participantId, exists: directoryWebData.exists, sml: SML_ID, queryDateTime: directoryWebData.queryDateTime, queryDurationMillis: directoryWebData.queryDurationMillis };
-            } else {
-                return directoryWebData;
-            }
+            // Always return the complete data, regardless of endpoint type
+            return directoryWebData;
         } catch (directoryWebError) {
             lastError = directoryWebError;
         }
