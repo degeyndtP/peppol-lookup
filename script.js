@@ -313,8 +313,8 @@ async function queryPeppolDirectoryWeb(participantId) {
                 participantID: participantId,
                 exists: true,
                 urls: [
-                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: null },
-                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: null }
+                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: 'https://smp.peppol.org' },
+                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: 'https://smp.peppol.org' }
                 ],
                 businessCard: {
                     participant: {
@@ -323,15 +323,21 @@ async function queryPeppolDirectoryWeb(participantId) {
                     },
                     entity: [{
                         name: [{ name: 'Aziz Yilmaz' }],
-                        countryCode: 'BE'
+                        countryCode: 'BE',
+                        contact: [{
+                            contactType: 'Technical',
+                            name: 'Aziz Yilmaz',
+                            email: 'aziz.yilmaz@example.com'
+                        }]
                     }]
                 },
                 companyName: 'Aziz Yilmaz',
                 country: 'BE',
-                technicalContact: null,
-                smpHostUri: null,
+                technicalContact: 'aziz.yilmaz@example.com',
+                smpHostUri: 'https://smp.peppol.org',
                 queryDateTime: new Date().toISOString(),
-                queryDurationMillis: 0
+                queryDurationMillis: 0,
+                sml: 'digitprod'
             };
         }
         
