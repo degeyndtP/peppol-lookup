@@ -1,5 +1,6 @@
 // Peppol API configuration
 const PEPPOL_API_BASE = 'https://peppol.helger.com/api';
+const OPENPEPPOL_API_BASE = 'https://directory.peppol.eu/api';
 const NETLIFY_PROXY = '/.netlify/functions/helger-proxy?endpoint='; // works on Netlify sites
 // Always use production SML
 const SML_ID = 'digitprod';
@@ -197,10 +198,173 @@ function encodeParticipantId(participantId) {
     return encodeURIComponent(participantId);
 }
 
-// Fetch data from Peppol API with error handling
-async function fetchPeppolData(endpoint) {
+// Direct SMP query using DNS lookup and HTTPS
+async function querySMPDirect(participantId) {
     try {
-        // Prefer calling through Netlify Function to avoid browser CORS issues
+        // Extract scheme and identifier from participant ID
+        const match = participantId.match(/iso6523-actorid-upis::(\d+):(.+)/);
+        if (!match) {
+            throw new Error('Invalid participant ID format');
+        }
+        
+        const [, scheme, identifier] = match;
+        
+        // Construct DNS query for SMP endpoint
+        const dnsQuery = `iso6523-actorid-upis._${scheme}._${identifier}.smp.peppol.org`;
+        
+        // For browser environment, we can't do direct DNS queries
+        // So we'll try common SMP endpoints with HTTPS
+        const smpEndpoints = [
+            `https://smp.peppol.org`,
+            `https://smp1.peppol.org`, 
+            `https://smp2.peppol.org`,
+            `https://test-infra.peppol.at` // for test participants
+        ];
+        
+        for (const endpoint of smpEndpoints) {
+            try {
+                const url = `${endpoint}/${encodeURIComponent(participantId)}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/xml,application/vnd.peppol.smp+xml',
+                        'User-Agent': 'Peppol-Lookup-Website/1.0'
+                    }
+                });
+                
+                if (response.ok) {
+                    const xmlText = await response.text();
+                    return parseSMPResponse(xmlText, participantId);
+                }
+            } catch (err) {
+                // Continue to next endpoint
+                continue;
+            }
+        }
+        
+        throw new Error('No SMP endpoints responded');
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Parse SMP XML response
+function parseSMPResponse(xmlText, participantId) {
+    try {
+        // Simple XML parsing for basic information
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        
+        // Check for parsing errors
+        if (xmlDoc.querySelector('parsererror')) {
+            throw new Error('Invalid XML response from SMP');
+        }
+        
+        // Extract basic participant information
+        const serviceMetadata = xmlDoc.querySelector('ServiceMetadata');
+        if (!serviceMetadata) {
+            throw new Error('No service metadata found');
+        }
+        
+        // Extract document types and endpoints
+        const documentIdentifiers = xmlDoc.querySelectorAll('DocumentIdentifier');
+        const endpoints = xmlDoc.querySelectorAll('Endpoint');
+        
+        const urls = [];
+        documentIdentifiers.forEach(doc => {
+            const docId = doc.getAttribute('value');
+            if (docId) {
+                urls.push({
+                    documentTypeID: docId,
+                    href: null // Would need to extract from ProcessList/ServiceEndpointReference
+                });
+            }
+        });
+        
+        // Extract technical contact from endpoints
+        let technicalContact = null;
+        endpoints.forEach(endpoint => {
+            const contact = endpoint.querySelector('TechnicalContact');
+            if (contact && !technicalContact) {
+                technicalContact = contact.textContent || contact.getAttribute('href');
+            }
+        });
+        
+        return {
+            participantID: participantId,
+            exists: true,
+            urls: urls,
+            technicalContact: technicalContact,
+            smpHostUri: null, // We don't know the exact SMP host
+            queryDateTime: new Date().toISOString(),
+            queryDurationMillis: 0
+        };
+    } catch (error) {
+        throw new Error(`Failed to parse SMP response: ${error.message}`);
+    }
+}
+
+// Query Open Peppol Directory API as third backup
+async function queryOpenPeppolDirectory(participantId) {
+    try {
+        // Open Peppol Directory uses different endpoint format
+        const searchUrl = `${OPENPEPPOL_API_BASE}/search?q=${encodeURIComponent(participantId)}`;
+        
+        const response = await fetch(searchUrl, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Peppol-Lookup-Website/1.0'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`OpenPeppol Directory API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Convert OpenPeppol Directory format to our expected format
+        if (data && data.matches && data.matches.length > 0) {
+            const match = data.matches[0];
+            const participant = match.participantID || match.participant;
+            
+            return {
+                participantID: participantId,
+                exists: true,
+                urls: match.urls || [],
+                businessCard: match.businessCard || null,
+                companyName: match.entity?.[0]?.name?.[0]?.name || null,
+                country: match.entity?.[0]?.countrycode || null,
+                technicalContact: null, // OpenPeppol Directory may not have this
+                smpHostUri: null,
+                queryDateTime: data.creation_dt || new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        } else {
+            // No matches found
+            return {
+                participantID: participantId,
+                exists: false,
+                urls: [],
+                businessCard: null,
+                companyName: null,
+                country: null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        }
+    } catch (error) {
+        throw new Error(`OpenPeppol Directory query failed: ${error.message}`);
+    }
+}
+
+// Fetch data from Peppol API with three-tier fallback: Helger -> SMP -> OpenPeppol Directory
+async function fetchPeppolData(endpoint) {
+    let lastError;
+    
+    // 1. Try Helger API first (through proxy if available)
+    try {
         let response;
         try {
             response = await fetch(`${NETLIFY_PROXY}${encodeURIComponent(endpoint)}`);
@@ -209,30 +373,77 @@ async function fetchPeppolData(endpoint) {
             response = await fetch(`${PEPPOL_API_BASE}${endpoint}`);
         }
         
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error(I18n?.t('error_company_not_found') || 'Company not found in Peppol network');
-            } else if (response.status >= 500) {
-                throw new Error(I18n?.t('error_service_unavailable') || 'Peppol service temporarily unavailable');
+        if (response.ok) {
+            const data = await response.json();
+            return data;
+        } else {
+            // Check if it's a 400 error (service disruption) - if so, try next fallback
+            if (response.status === 400) {
+                lastError = new Error(`Helger API service unavailable (HTTP 400) - trying fallbacks`);
             } else {
-                const msg = (I18n?.t('error_api_error', { status: response.status }) || `API error: ${response.status}`);
-                throw new Error(msg);
+                lastError = new Error(`Helger API error: ${response.status}`);
             }
         }
-        
-        const data = await response.json();
-        return data;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        lastError = error;
+    }
+    
+    // 2. Fallback to direct SMP queries for participant existence and metadata
+    if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
+        try {
+            // Extract participant ID from endpoint
+            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            const smpData = await querySMPDirect(participantId);
+            
+            // Convert SMP data to expected format
+            if (endpoint.includes('/ppidexistence/')) {
+                return {
+                    participantID: participantId,
+                    exists: smpData.exists,
+                    sml: SML_ID,
+                    queryDateTime: smpData.queryDateTime,
+                    queryDurationMillis: smpData.queryDurationMillis
+                };
+            } else {
+                return smpData;
+            }
+        } catch (smpError) {
+            lastError = smpError;
+        }
+        
+        // 3. Final fallback to Open Peppol Directory
+        try {
+            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            const directoryData = await queryOpenPeppolDirectory(participantId);
+            
+            // Convert to expected format
+            if (endpoint.includes('/ppidexistence/')) {
+                return {
+                    participantID: participantId,
+                    exists: directoryData.exists,
+                    sml: SML_ID,
+                    queryDateTime: directoryData.queryDateTime,
+                    queryDurationMillis: directoryData.queryDurationMillis
+                };
+            } else {
+                return directoryData;
+            }
+        } catch (directoryError) {
+            lastError = directoryError;
+        }
+    }
+    
+    // If all three methods fail, throw the last error
+    if (lastError) {
+        if (lastError.name === 'TypeError' && lastError.message.includes('fetch')) {
             if (location && location.protocol === 'file:') {
                 throw new Error(I18n?.t('error_network_local_file') || 'Network request was blocked by the browser when opened from a local file. Please run this page via a local web server or deploy it to a web host.');
             }
-            throw new Error(I18n?.t('error_network_generic') || 'Network error. Please check your internet connection.');
+            throw new Error(I18n?.t('error_network') || 'Network error occurred. Please check your internet connection.');
         }
-        throw error;
+        throw lastError;
     }
 }
-
 // Extract company information from API responses
 function extractCompanyInfo(businessCardData, smpData, existenceData) {
     // Use nulls for unknown values; translate only when rendering
