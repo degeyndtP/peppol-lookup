@@ -563,126 +563,80 @@ async function queryOpenPeppolDirectory(participantId) {
     }
 }
 
-// Fetch data from Peppol API with three-tier fallback: Helger -> SMP -> OpenPeppol Directory
+// Simple working Peppol data fetch using OpenPeppol Directory API
 async function fetchPeppolData(endpoint) {
-    console.log('=== fetchPeppolData called with endpoint:', endpoint);
-    let lastError;
-    
-    // 1. Try Helger API first (through proxy if available)
     try {
-        console.log('Trying Helger API...');
-        let response;
-        try {
-            console.log('Trying proxy:', `${NETLIFY_PROXY}${encodeURIComponent(endpoint)}`);
-            response = await fetch(`${NETLIFY_PROXY}${encodeURIComponent(endpoint)}`);
-        } catch (proxyErr) {
-            console.log('Proxy failed, trying direct API:', `${PEPPOL_API_BASE}${endpoint}`);
-            // If proxy is not available (e.g., local file or other hosting), fall back to direct API
-            response = await fetch(`${PEPPOL_API_BASE}${endpoint}`);
+        // Extract participant ID from endpoint
+        const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+        const identifier = participantId.includes(':') ? participantId.split(':').pop() : participantId;
+        
+        // Direct call to OpenPeppol Directory API
+        const searchUrl = `https://directory.peppol.eu/search/1.0/json?q=${encodeURIComponent(identifier)}`;
+        
+        const response = await fetch(searchUrl, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Peppol-Lookup-Website/1.0'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`OpenPeppol Directory API error: ${response.status}`);
         }
         
-        console.log('Helger API response status:', response.status);
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Helger API success, returning data');
-            return data;
+        const data = await response.json();
+        
+        // Convert to expected format
+        if (data && data.matches && data.matches.length > 0) {
+            const match = data.matches[0];
+            
+            // Convert docTypes to urls format
+            const urls = match.docTypes ? match.docTypes.map(doc => ({
+                documentTypeID: doc.value,
+                href: null
+            })) : [];
+            
+            return {
+                participantID: participantId,
+                exists: true,
+                urls: urls,
+                businessCard: {
+                    participant: match.participantID,
+                    entity: match.entities || []
+                },
+                companyName: match.entities?.[0]?.name?.[0]?.name || null,
+                country: match.entities?.[0]?.countryCode || null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: data['creation-dt'] || new Date().toISOString(),
+                queryDurationMillis: 0
+            };
         } else {
-            // Check if it's a 400 error (service disruption) - if so, try next fallback
-            if (response.status === 400) {
-                console.log('Helger API returned 400, trying fallbacks');
-                lastError = new Error(`Helger API service unavailable (HTTP 400) - trying fallbacks`);
-            } else {
-                console.log('Helger API returned error:', response.status);
-                lastError = new Error(`Helger API error: ${response.status}`);
-            }
+            // No matches found
+            return {
+                participantID: participantId,
+                exists: false,
+                urls: [],
+                businessCard: null,
+                companyName: null,
+                country: null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
         }
     } catch (error) {
-        console.log('Helger API threw error:', error.message);
-        lastError = error;
-    }
-    
-    // 2. Fallback to direct SMP queries for participant existence and metadata
-    console.log('Checking if fallback should trigger for endpoint:', endpoint);
-    console.log('Endpoint includes /ppidexistence/:', endpoint.includes('/ppidexistence/'));
-    console.log('Endpoint includes /smpquery/:', endpoint.includes('/smpquery/'));
-    
-    if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
-        console.log('*** ENTERING FALLBACK BLOCK ***');
-        console.log('Trying SMP Direct fallback...');
-        try {
-            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
-            console.log('SMP Direct participantId:', participantId);
-            const smpData = await querySMPDirect(participantId);
-            console.log('SMP Direct success, returning data');
-            if (endpoint.includes('/ppidexistence/')) {
-                return { participantID: participantId, exists: smpData.exists, sml: SML_ID, queryDateTime: smpData.queryDateTime, queryDurationMillis: smpData.queryDurationMillis };
-            } else {
-                return smpData;
-            }
-        } catch (smpError) {
-            console.log('SMP Direct failed:', smpError.message);
-            lastError = smpError;
-        }
-        
-        console.log('Trying OpenPeppol Directory fallback...');
-        try {
-            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
-            console.log('OpenPeppol Directory participantId:', participantId);
-            const directoryData = await queryOpenPeppolDirectory(participantId);
-            console.log('OpenPeppol Directory success, returning data');
-            // Always return the complete data, regardless of endpoint type
-            return directoryData;
-        } catch (directoryError) {
-            console.log('OpenPeppol Directory failed:', directoryError.message);
-            lastError = directoryError;
-        }
-        try {
-            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
-            const directoryWebData = await queryPeppolDirectoryWeb(participantId);
-            if (endpoint.includes('/ppidexistence/')) {
-                return { participantID: participantId, exists: directoryWebData.exists, sml: SML_ID, queryDateTime: directoryWebData.queryDateTime, queryDurationMillis: directoryWebData.queryDurationMillis };
-            } else {
-                return directoryWebData;
-            }
-        } catch (directoryWebError) {
-            lastError = directoryWebError;
-        }
-    }
-    
-    // 3. Fallback to web scraping for participant existence and metadata
-    if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
-        try {
-            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
-            const directoryWebData = await queryPeppolDirectoryWeb(participantId);
-            // Always return the complete data, regardless of endpoint type
-            return directoryWebData;
-        } catch (directoryWebError) {
-            lastError = directoryWebError;
-        }
-        try {
-            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
-            const helgerWebData = await queryHelgerWebInterface(participantId);
-            if (endpoint.includes('/ppidexistence/')) {
-                return { participantID: participantId, exists: helgerWebData.exists, sml: SML_ID, queryDateTime: helgerWebData.queryDateTime, queryDurationMillis: helgerWebData.queryDurationMillis };
-            } else {
-                return helgerWebData;
-            }
-        } catch (helgerWebError) {
-            lastError = helgerWebError;
-        }
-    }
-    
-    // If all three methods fail, throw the last error
-    if (lastError) {
-        if (lastError.name === 'TypeError' && lastError.message.includes('fetch')) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
             if (location && location.protocol === 'file:') {
                 throw new Error(I18n?.t('error_network_local_file') || 'Network request was blocked by the browser when opened from a local file. Please run this page via a local web server or deploy it to a web host.');
             }
             throw new Error(I18n?.t('error_network') || 'Network error occurred. Please check your internet connection.');
         }
-        throw lastError;
+        throw error;
     }
 }
+
 // Extract company information from API responses
 function extractCompanyInfo(businessCardData, smpData, existenceData) {
     // Use nulls for unknown values; translate only when rendering
