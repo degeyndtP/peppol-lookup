@@ -565,52 +565,70 @@ async function queryOpenPeppolDirectory(participantId) {
 
 // Fetch data from Peppol API with three-tier fallback: Helger -> SMP -> OpenPeppol Directory
 async function fetchPeppolData(endpoint) {
+    console.log('=== fetchPeppolData called with endpoint:', endpoint);
     let lastError;
     
     // 1. Try Helger API first (through proxy if available)
     try {
+        console.log('Trying Helger API...');
         let response;
         try {
+            console.log('Trying proxy:', `${NETLIFY_PROXY}${encodeURIComponent(endpoint)}`);
             response = await fetch(`${NETLIFY_PROXY}${encodeURIComponent(endpoint)}`);
         } catch (proxyErr) {
+            console.log('Proxy failed, trying direct API:', `${PEPPOL_API_BASE}${endpoint}`);
             // If proxy is not available (e.g., local file or other hosting), fall back to direct API
             response = await fetch(`${PEPPOL_API_BASE}${endpoint}`);
         }
         
+        console.log('Helger API response status:', response.status);
         if (response.ok) {
             const data = await response.json();
+            console.log('Helger API success, returning data');
             return data;
         } else {
             // Check if it's a 400 error (service disruption) - if so, try next fallback
             if (response.status === 400) {
+                console.log('Helger API returned 400, trying fallbacks');
                 lastError = new Error(`Helger API service unavailable (HTTP 400) - trying fallbacks`);
             } else {
+                console.log('Helger API returned error:', response.status);
                 lastError = new Error(`Helger API error: ${response.status}`);
             }
         }
     } catch (error) {
+        console.log('Helger API threw error:', error.message);
         lastError = error;
     }
     
     // 2. Fallback to direct SMP queries for participant existence and metadata
     if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
+        console.log('Trying SMP Direct fallback...');
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            console.log('SMP Direct participantId:', participantId);
             const smpData = await querySMPDirect(participantId);
+            console.log('SMP Direct success, returning data');
             if (endpoint.includes('/ppidexistence/')) {
                 return { participantID: participantId, exists: smpData.exists, sml: SML_ID, queryDateTime: smpData.queryDateTime, queryDurationMillis: smpData.queryDurationMillis };
             } else {
                 return smpData;
             }
         } catch (smpError) {
+            console.log('SMP Direct failed:', smpError.message);
             lastError = smpError;
         }
+        
+        console.log('Trying OpenPeppol Directory fallback...');
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            console.log('OpenPeppol Directory participantId:', participantId);
             const directoryData = await queryOpenPeppolDirectory(participantId);
+            console.log('OpenPeppol Directory success, returning data');
             // Always return the complete data, regardless of endpoint type
             return directoryData;
         } catch (directoryError) {
+            console.log('OpenPeppol Directory failed:', directoryError.message);
             lastError = directoryError;
         }
         try {
