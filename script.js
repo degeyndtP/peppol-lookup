@@ -307,40 +307,6 @@ function parseSMPResponse(xmlText, participantId) {
 // Query Peppol Directory web interface as fourth backup (web scraping)
 async function queryPeppolDirectoryWeb(participantId) {
     try {
-        // Hardcoded response for known participant as immediate fix
-        if (participantId.includes('0763763845')) {
-            return {
-                participantID: participantId,
-                exists: true,
-                urls: [
-                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: 'https://smp.peppol.org' },
-                    { documentTypeID: 'urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1', href: 'https://smp.peppol.org' }
-                ],
-                businessCard: {
-                    participant: {
-                        scheme: 'iso6523-actorid-upis',
-                        value: '0208:0763763845'
-                    },
-                    entity: [{
-                        name: [{ name: 'Aziz Yilmaz' }],
-                        countryCode: 'BE',
-                        contact: [{
-                            contactType: 'Technical',
-                            name: 'Aziz Yilmaz',
-                            email: 'aziz.yilmaz@example.com'
-                        }]
-                    }]
-                },
-                companyName: 'Aziz Yilmaz',
-                country: 'BE',
-                technicalContact: 'aziz.yilmaz@example.com',
-                smpHostUri: 'https://smp.peppol.org',
-                queryDateTime: new Date().toISOString(),
-                queryDurationMillis: 0,
-                sml: 'digitprod'
-            };
-        }
-        
         // Extract just the identifier part for the web interface
         const identifier = participantId.includes(':') ? participantId.split(':').pop() : participantId;
         
@@ -360,6 +326,24 @@ async function queryPeppolDirectoryWeb(participantId) {
         
         const html = await response.text();
         
+        // Check if participant was found
+        const foundMatch = html.match(/Found (\d+) entities? matching/i);
+        if (!foundMatch || foundMatch[1] === '0') {
+            // No entities found
+            return {
+                participantID: participantId,
+                exists: false,
+                urls: [],
+                businessCard: null,
+                companyName: null,
+                country: null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        }
+        
         // Parse HTML to extract participant information
         // Look for the participant ID and entity name in the HTML
         const entityNameMatch = html.match(/Entity Name:<\/div><div class="col-9 col-lg-10">([^<]+)/i);
@@ -370,6 +354,10 @@ async function queryPeppolDirectoryWeb(participantId) {
             // Try to extract country information
             const countryMatch = html.match(/Country:<\/div><div class="col-9 col-lg-10"><span[^>]*>.*?<\/span> ([A-Z]{2})/i);
             const country = countryMatch ? countryMatch[1] : 'BE'; // Default to Belgium for 0208 scheme
+            
+            // Try to extract contact information if available
+            const contactMatch = html.match(/Contact:<\/div><div class="col-9 col-lg-10">([^<]+)/i);
+            const contact = contactMatch ? contactMatch[1].trim() : null;
             
             return {
                 participantID: participantId,
@@ -382,13 +370,17 @@ async function queryPeppolDirectoryWeb(participantId) {
                     },
                     entity: [{
                         name: [{ name: entityName }],
-                        countryCode: country
+                        countryCode: country,
+                        contact: contact ? [{
+                            contactType: 'Technical',
+                            name: contact
+                        }] : []
                     }]
                 },
                 companyName: entityName,
                 country: country,
-                technicalContact: null,
-                smpHostUri: null,
+                technicalContact: contact,
+                smpHostUri: 'https://smp.peppol.org', // Default SMP for found participants
                 queryDateTime: new Date().toISOString(),
                 queryDurationMillis: 0
             };
