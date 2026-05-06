@@ -602,6 +602,10 @@ async function fetchPeppolData(endpoint) {
     }
     
     // 2. Fallback to direct SMP queries for participant existence and metadata
+    console.log('Checking if fallback should trigger for endpoint:', endpoint);
+    console.log('Endpoint includes /ppidexistence/:', endpoint.includes('/ppidexistence/'));
+    console.log('Endpoint includes /smpquery/:', endpoint.includes('/smpquery/'));
+    
     if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
         console.log('Trying SMP Direct fallback...');
         try {
