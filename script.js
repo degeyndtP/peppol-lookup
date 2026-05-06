@@ -500,6 +500,8 @@ async function queryOpenPeppolDirectory(participantId) {
         // Use the correct API endpoint format: /search/1.0/json
         const searchUrl = `${OPENPEPPOL_API_BASE}/search/1.0/json?q=${encodeURIComponent(identifier)}`;
         
+        console.log('OpenPeppol Directory API call:', searchUrl);
+        
         const response = await fetch(searchUrl, {
             headers: {
                 'Accept': 'application/json',
@@ -507,11 +509,14 @@ async function queryOpenPeppolDirectory(participantId) {
             }
         });
         
+        console.log('OpenPeppol Directory API response status:', response.status);
+        
         if (!response.ok) {
             throw new Error(`OpenPeppol Directory API error: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('OpenPeppol Directory API data:', data);
         
         // Convert OpenPeppol Directory format to our expected format
         if (data && data.matches && data.matches.length > 0) {
