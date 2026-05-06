@@ -497,8 +497,8 @@ async function queryOpenPeppolDirectory(participantId) {
         // Extract just the identifier part (e.g., 0763763845 from iso6523-actorid-upis::0208:0763763845)
         const identifier = participantId.includes(':') ? participantId.split(':').pop() : participantId;
         
-        // Use the same endpoint format as the working web interface
-        const searchUrl = `${OPENPEPPOL_API_BASE}/search?q=${encodeURIComponent(identifier)}`;
+        // Use the correct API endpoint format: /search/1.0/json
+        const searchUrl = `${OPENPEPPOL_API_BASE}/search/1.0/json?q=${encodeURIComponent(identifier)}`;
         
         const response = await fetch(searchUrl, {
             headers: {
@@ -517,16 +517,25 @@ async function queryOpenPeppolDirectory(participantId) {
         if (data && data.matches && data.matches.length > 0) {
             const match = data.matches[0];
             
+            // Convert docTypes to urls format
+            const urls = match.docTypes ? match.docTypes.map(doc => ({
+                documentTypeID: doc.value,
+                href: null // API doesn't provide direct URLs
+            })) : [];
+            
             return {
                 participantID: participantId,
                 exists: true,
-                urls: match.urls || [],
-                businessCard: match.businessCard || null,
-                companyName: match.entity?.[0]?.name?.[0]?.name || null,
-                country: match.entity?.[0]?.countrycode || null,
-                technicalContact: null, // OpenPeppol Directory may not have this
-                smpHostUri: null,
-                queryDateTime: data.creation_dt || new Date().toISOString(),
+                urls: urls,
+                businessCard: {
+                    participant: match.participantID,
+                    entity: match.entities || []
+                },
+                companyName: match.entities?.[0]?.name?.[0]?.name || null,
+                country: match.entities?.[0]?.countryCode || null,
+                technicalContact: null, // OpenPeppol Directory API doesn't provide this
+                smpHostUri: null, // API doesn't provide SMP host URI
+                queryDateTime: data['creation-dt'] || new Date().toISOString(),
                 queryDurationMillis: 0
             };
         } else {
