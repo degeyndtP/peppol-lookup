@@ -1,6 +1,7 @@
 // Peppol API configuration
 const PEPPOL_API_BASE = 'https://peppol.helger.com/api';
 const OPENPEPPOL_API_BASE = 'https://directory.peppol.eu/api';
+const ADEMICO_API_BASE = 'https://peppol-tools-api1.ademico-software.com';
 const NETLIFY_PROXY = '/.netlify/functions/helger-proxy?endpoint='; // works on Netlify sites
 // Always use production SML
 const SML_ID = 'digitprod';
@@ -303,6 +304,167 @@ function parseSMPResponse(xmlText, participantId) {
     }
 }
 
+// Query Peppol Directory web interface as fourth backup (web scraping)
+async function queryPeppolDirectoryWeb(participantId) {
+    try {
+        // Extract just the identifier part for the web interface
+        const identifier = participantId.includes(':') ? participantId.split(':').pop() : participantId;
+        
+        // Use the working web interface URL
+        const webUrl = `https://directory.peppol.eu/public/locale-en_US/menuitem-search?q=${encodeURIComponent(identifier)}`;
+        
+        const response = await fetch(webUrl, {
+            headers: {
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (compatible; Peppol-Lookup-Website/1.0)'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Peppol Directory web error: ${response.status}`);
+        }
+        
+        const html = await response.text();
+        
+        // Parse HTML to extract participant information
+        // Look for the participant ID and entity name in the HTML
+        const participantIdMatch = html.match(new RegExp(`${identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*?Entity Name:\\s*([^\\n<]+)`, 'i'));
+        
+        if (participantIdMatch && participantIdMatch[1]) {
+            const entityName = participantIdMatch[1].trim();
+            
+            // Try to extract country information
+            const countryMatch = html.match(/Country:\s*([A-Z]{2})/i);
+            const country = countryMatch ? countryMatch[1] : 'BE'; // Default to Belgium for 0208 scheme
+            
+            return {
+                participantID: participantId,
+                exists: true,
+                urls: [], // Web interface doesn't provide document types
+                businessCard: {
+                    participant: {
+                        scheme: 'iso6523-actorid-upis',
+                        value: `0208:${identifier}`
+                    },
+                    entity: [{
+                        name: [{ name: entityName }],
+                        countryCode: country
+                    }]
+                },
+                companyName: entityName,
+                country: country,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        } else {
+            // Participant not found in web interface
+            return {
+                participantID: participantId,
+                exists: false,
+                urls: [],
+                businessCard: null,
+                companyName: null,
+                country: null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        }
+    } catch (error) {
+        throw new Error(`Peppol Directory web scraping failed: ${error.message}`);
+    }
+}
+
+// Query Helger web interface as fifth backup (web scraping)
+async function queryHelgerWebInterface(participantId) {
+    try {
+        // Extract scheme and identifier from participant ID
+        const match = participantId.match(/iso6523-actorid-upis::(\d+):(.+)/);
+        if (!match) {
+            throw new Error('Invalid participant ID format');
+        }
+        
+        const [, scheme, identifier] = match;
+        
+        // Use the working Helger web interface URL
+        const webUrl = `https://peppol.helger.com/public/locale-en_US/menuitem-tools-participant?scheme=iso6523-actorid-upis&value=${encodeURIComponent(scheme + ':' + identifier)}&sml=peppolprod&querybc=true&verifysignatures=true&xsdvalidation=true&action=perform`;
+        
+        const response = await fetch(webUrl, {
+            headers: {
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (compatible; Peppol-Lookup-Website/1.0)'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Helger web interface error: ${response.status}`);
+        }
+        
+        const html = await response.text();
+        
+        // Check if participant exists by looking for error messages
+        if (html.includes('not found') || html.includes('Not registered') || html.includes('Unknown Service Group')) {
+            return {
+                participantID: participantId,
+                exists: false,
+                urls: [],
+                businessCard: null,
+                companyName: null,
+                country: null,
+                technicalContact: null,
+                smpHostUri: null,
+                queryDateTime: new Date().toISOString(),
+                queryDurationMillis: 0
+            };
+        }
+        
+        // Extract business card information if available
+        const entityNameMatch = html.match(/Entity Name[^>]*>([^<]+)/i);
+        const entityName = entityNameMatch ? entityNameMatch[1].trim() : null;
+        
+        // Try to extract country information
+        const countryMatch = html.match(/Country[^>]*>([^<]+)/i);
+        const country = countryMatch ? countryMatch[1].trim() : null;
+        
+        // Extract document types if available
+        const documentTypes = [];
+        const docTypeMatches = html.matchAll(/documenttypeid[^>]*>([^<]+)/gi);
+        for (const match of docTypeMatches) {
+            documentTypes.push({
+                documentTypeID: match[1].trim(),
+                href: null // Web interface doesn't provide direct URLs
+            });
+        }
+        
+        return {
+            participantID: participantId,
+            exists: true,
+            urls: documentTypes,
+            businessCard: entityName ? {
+                participant: {
+                    scheme: 'iso6523-actorid-upis',
+                    value: `${scheme}:${identifier}`
+                },
+                entity: [{
+                    name: [{ name: entityName }],
+                    countryCode: country || 'BE'
+                }]
+            } : null,
+            companyName: entityName,
+            country: country,
+            technicalContact: null,
+            smpHostUri: null,
+            queryDateTime: new Date().toISOString(),
+            queryDurationMillis: 0
+        };
+    } catch (error) {
+        throw new Error(`Helger web interface scraping failed: ${error.message}`);
+    }
+}
+
 // Query Open Peppol Directory API as third backup
 async function queryOpenPeppolDirectory(participantId) {
     try {
@@ -393,45 +555,63 @@ async function fetchPeppolData(endpoint) {
     // 2. Fallback to direct SMP queries for participant existence and metadata
     if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
         try {
-            // Extract participant ID from endpoint
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
             const smpData = await querySMPDirect(participantId);
-            
-            // Convert SMP data to expected format
             if (endpoint.includes('/ppidexistence/')) {
-                return {
-                    participantID: participantId,
-                    exists: smpData.exists,
-                    sml: SML_ID,
-                    queryDateTime: smpData.queryDateTime,
-                    queryDurationMillis: smpData.queryDurationMillis
-                };
+                return { participantID: participantId, exists: smpData.exists, sml: SML_ID, queryDateTime: smpData.queryDateTime, queryDurationMillis: smpData.queryDurationMillis };
             } else {
                 return smpData;
             }
         } catch (smpError) {
             lastError = smpError;
         }
-        
-        // 3. Final fallback to Open Peppol Directory
         try {
             const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
             const directoryData = await queryOpenPeppolDirectory(participantId);
-            
-            // Convert to expected format
             if (endpoint.includes('/ppidexistence/')) {
-                return {
-                    participantID: participantId,
-                    exists: directoryData.exists,
-                    sml: SML_ID,
-                    queryDateTime: directoryData.queryDateTime,
-                    queryDurationMillis: directoryData.queryDurationMillis
-                };
+                return { participantID: participantId, exists: directoryData.exists, sml: SML_ID, queryDateTime: directoryData.queryDateTime, queryDurationMillis: directoryData.queryDurationMillis };
             } else {
                 return directoryData;
             }
         } catch (directoryError) {
             lastError = directoryError;
+        }
+        try {
+            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            const directoryWebData = await queryPeppolDirectoryWeb(participantId);
+            if (endpoint.includes('/ppidexistence/')) {
+                return { participantID: participantId, exists: directoryWebData.exists, sml: SML_ID, queryDateTime: directoryWebData.queryDateTime, queryDurationMillis: directoryWebData.queryDurationMillis };
+            } else {
+                return directoryWebData;
+            }
+        } catch (directoryWebError) {
+            lastError = directoryWebError;
+        }
+    }
+    
+    // 3. Fallback to web scraping for participant existence and metadata
+    if (endpoint.includes('/ppidexistence/') || endpoint.includes('/smpquery/')) {
+        try {
+            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            const directoryWebData = await queryPeppolDirectoryWeb(participantId);
+            if (endpoint.includes('/ppidexistence/')) {
+                return { participantID: participantId, exists: directoryWebData.exists, sml: SML_ID, queryDateTime: directoryWebData.queryDateTime, queryDurationMillis: directoryWebData.queryDurationMillis };
+            } else {
+                return directoryWebData;
+            }
+        } catch (directoryWebError) {
+            lastError = directoryWebError;
+        }
+        try {
+            const participantId = endpoint.split('/').pop().replace(/%3a%3a/g, '::');
+            const helgerWebData = await queryHelgerWebInterface(participantId);
+            if (endpoint.includes('/ppidexistence/')) {
+                return { participantID: participantId, exists: helgerWebData.exists, sml: SML_ID, queryDateTime: helgerWebData.queryDateTime, queryDurationMillis: helgerWebData.queryDurationMillis };
+            } else {
+                return helgerWebData;
+            }
+        } catch (helgerWebError) {
+            lastError = helgerWebError;
         }
     }
     
