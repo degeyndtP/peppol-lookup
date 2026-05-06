@@ -328,13 +328,13 @@ async function queryPeppolDirectoryWeb(participantId) {
         
         // Parse HTML to extract participant information
         // Look for the participant ID and entity name in the HTML
-        const participantIdMatch = html.match(new RegExp(`${identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*?Entity Name:\\s*([^\\n<]+)`, 'i'));
+        const entityNameMatch = html.match(/Entity Name:<\/div><div class="col-9 col-lg-10">([^<]+)/i);
         
-        if (participantIdMatch && participantIdMatch[1]) {
-            const entityName = participantIdMatch[1].trim();
+        if (entityNameMatch && entityNameMatch[1]) {
+            const entityName = entityNameMatch[1].trim();
             
             // Try to extract country information
-            const countryMatch = html.match(/Country:\s*([A-Z]{2})/i);
+            const countryMatch = html.match(/Country:<\/div><div class="col-9 col-lg-10"><span[^>]*>.*?<\/span> ([A-Z]{2})/i);
             const country = countryMatch ? countryMatch[1] : 'BE'; // Default to Belgium for 0208 scheme
             
             return {
