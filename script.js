@@ -306,8 +306,11 @@ function parseSMPResponse(xmlText, participantId) {
 // Query Open Peppol Directory API as third backup
 async function queryOpenPeppolDirectory(participantId) {
     try {
-        // Open Peppol Directory uses different endpoint format
-        const searchUrl = `${OPENPEPPOL_API_BASE}/search?q=${encodeURIComponent(participantId)}`;
+        // Extract just the identifier part (e.g., 0763763845 from iso6523-actorid-upis::0208:0763763845)
+        const identifier = participantId.includes(':') ? participantId.split(':').pop() : participantId;
+        
+        // Use the same endpoint format as the working web interface
+        const searchUrl = `${OPENPEPPOL_API_BASE}/search?q=${encodeURIComponent(identifier)}`;
         
         const response = await fetch(searchUrl, {
             headers: {
@@ -325,7 +328,6 @@ async function queryOpenPeppolDirectory(participantId) {
         // Convert OpenPeppol Directory format to our expected format
         if (data && data.matches && data.matches.length > 0) {
             const match = data.matches[0];
-            const participant = match.participantID || match.participant;
             
             return {
                 participantID: participantId,
